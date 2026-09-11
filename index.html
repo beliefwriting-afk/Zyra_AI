@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zyra</title>
+<meta name="description" content="Zyra — 部門、看板、卡片與結構化標籤的專案管理工具">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="src/css/tokens.css">
+<link rel="stylesheet" href="src/css/layout.css">
+<link rel="stylesheet" href="src/css/components.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ================= 側邊欄 ================= -->
+  <aside class="sidebar" id="sidebar" aria-label="部門與看板導覽">
+    <button class="collapse-btn-collapsed" id="btnExpandSidebar" title="展開側邊欄" aria-label="展開側邊欄">»</button>
+
+    <div class="brand-row">
+      <!-- 產品 icon 日後放這裡：<span class="brand-mark"><svg …/></span> -->
+      <span class="brand-wordmark">Zyra</span>
+      <button class="collapse-btn" id="btnCollapseSidebar" title="收合側邊欄" aria-label="收合側邊欄">«</button>
+    </div>
+
+    <div class="company-row">
+      <span class="avatar-chip" id="companyAvatar" aria-hidden="true">企</span>
+      <div class="company-name full-only" id="companyName"></div>
+    </div>
+
+    <nav class="dept-scroll full-only" id="deptScroll"></nav>
+
+    <div class="account-row">
+      <button class="avatar-chip" id="accountAvatar" title="帳號" aria-label="帳號選單">使</button>
+      <span class="account-name full-only" id="accountName"></span>
+      <button class="icon-btn full-only" id="btnShortcuts" title="鍵盤快捷鍵" aria-label="鍵盤快捷鍵">⌨</button>
+      <button class="icon-btn" id="btnSettings" title="設定" aria-label="開啟設定">⚙</button>
+    </div>
+  </aside>
+
+  <!-- ================= 主區 ================= -->
+  <main class="main">
+    <header class="topbar">
+      <div class="breadcrumb">
+        <span class="dept-tag" id="bcDept"></span>
+        <span class="sep" id="bcSep">›</span>
+        <h1 id="bcBoard">Zyra</h1>
+      </div>
+      <div class="topbar-actions" id="topbarActions">
+        <button class="pill-btn" id="btnGlobalSearch" title="全域搜尋（Ctrl / ⌘ + K）">⌕ 搜尋</button>
+        <button class="pill-btn" id="btnColumns">≡ 看板欄位</button>
+        <button class="pill-btn" id="btnLibrary">🏷 範本與標籤庫</button>
+        <button class="btn-primary" id="btnNewCard">＋ 新增卡片</button>
+      </div>
+    </header>
+
+    <div class="filterbar" id="filterbar" role="search" aria-label="卡片篩選">
+      <div class="filter-search">
+        <span class="icon" aria-hidden="true">⌕</span>
+        <input type="text" id="filterSearch" placeholder="在這個看板搜尋（按 /）" aria-label="在目前看板搜尋卡片">
+        <button class="clear hidden" id="filterSearchClear" aria-label="清除搜尋文字">×</button>
+      </div>
+      <select class="filter-select" id="filterAssignee" aria-label="依負責人篩選"></select>
+      <select class="filter-select" id="filterLabel" aria-label="依標籤篩選"></select>
+      <select class="filter-select" id="filterDue" aria-label="依到期狀態篩選"></select>
+      <select class="filter-select" id="filterPriority" aria-label="依優先級篩選"></select>
+      <button class="pill-btn" id="filterMine" aria-pressed="false">只看我的</button>
+      <button class="pill-btn hidden" id="filterReset">清除篩選</button>
+      <span class="filter-summary" id="filterSummary" aria-live="polite"></span>
+    </div>
+
+    <div class="board" id="board"></div>
+  </main>
+</div>
+
+<!-- 螢幕閱讀器即時播報 -->
+<div id="liveRegion" class="sr-only" role="status" aria-live="polite"></div>
+
+<div class="overlay" id="overlay"></div>
+<div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+
+<!-- ================= 範本與標籤庫（抽屜） ================= -->
+<aside class="drawer" id="libraryDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerDeptName" aria-hidden="true">
+  <h2 id="drawerDeptName">範本與標籤庫</h2>
+  <div class="drawer-sub" id="drawerDeptMeta"></div>
+
+  <div class="drawer-section-title">
+    <span>範本</span>
+    <button class="add-row-btn" id="btnAddTemplate">＋ 新增範本</button>
+  </div>
+  <div id="templateList"></div>
+
+  <div class="drawer-section-title"><span>標籤庫</span></div>
+  <div id="labelList"></div>
+  <div class="label-create-box" id="labelCreateBox"></div>
+
+  <div class="modal-actions" style="border-top:none; padding-top:22px;">
+    <button class="btn-secondary" id="btnCloseDrawer">關閉</button>
+  </div>
+</aside>
+
+
+<!-- ================= 建立部門 ================= -->
+<div class="modal narrow" id="modalNewDept" role="dialog" aria-modal="true" aria-labelledby="ndTitle" aria-hidden="true">
+  <h2 id="ndTitle">建立部門</h2>
+  <div class="modal-sub">每個部門都有自己的看板、範本與標籤庫，彼此獨立。</div>
+  <div class="field-group">
+    <label for="ndName">部門名稱</label>
+    <input type="text" id="ndName" placeholder="例如：行銷部門" data-autofocus>
+  </div>
+  <div class="field-group">
+    <label for="ndBoardName">預設看板名稱</label>
+    <input type="text" id="ndBoardName" value="看板">
+  </div>
+  <div class="inline-error hidden" id="ndError" role="alert"></div>
+  <div class="modal-actions">
+    <button class="btn-text" id="ndCancel">取消</button>
+    <button class="btn-primary" id="ndSubmit">建立部門</button>
+  </div>
+</div>
+
+
+<!-- ================= 建立看板 ================= -->
+<div class="modal narrow" id="modalNewBoard" role="dialog" aria-modal="true" aria-labelledby="nbTitle" aria-hidden="true">
+  <h2 id="nbTitle">建立看板</h2>
+  <div class="modal-sub" id="nbSub"></div>
+  <div class="field-group">
+    <label for="nbName">看板名稱</label>
+    <input type="text" id="nbName" placeholder="例如：活動看板" data-autofocus>
+  </div>
+  <div class="field-group">
+    <label>看板欄位（流程階段）</label>
+    <div class="seg-row">
+      <button class="seg-btn" data-tpl="basic">套用：三欄式</button>
+      <button class="seg-btn" data-tpl="flow">套用：五階流程</button>
+      <button class="seg-btn" data-tpl="blank">清空</button>
+    </div>
+    <div class="chip-editor" id="nbColumns"></div>
+    <input class="chip-add-input" id="nbAddColumnInput" placeholder="＋ 欄位名稱" aria-label="新增看板欄位">
+  </div>
+  <div class="inline-error hidden" id="nbError" role="alert"></div>
+  <div class="modal-actions">
+    <button class="btn-text" id="nbCancel">取消</button>
+    <button class="btn-primary" id="nbSubmit">建立看板</button>
+  </div>
+</div>
+
+
+<!-- ================= 自訂看板欄位 ================= -->
+<div class="modal narrow" id="modalColumns" role="dialog" aria-modal="true" aria-labelledby="colTitle" aria-hidden="true">
+  <h2 id="colTitle">看板欄位</h2>
+  <div class="modal-sub" id="colSub"></div>
+  <div class="chip-editor" id="colColumns"></div>
+  <input class="chip-add-input" id="colAddColumnInput" placeholder="＋ 欄位名稱" aria-label="新增看板欄位">
+  <div class="modal-actions">
+    <button class="btn-secondary" id="colClose">完成</button>
+  </div>
+</div>
+
+
+<!-- ================= 卡片 ================= -->
+<div class="modal" id="modalCard" role="dialog" aria-modal="true" aria-labelledby="cardModalTitle" aria-hidden="true">
+  <h2 id="cardModalTitle">新增卡片</h2>
+  <div class="modal-sub" id="cardModalSub"></div>
+
+  <div class="field-group">
+    <label for="cardTitleInput">卡片標題</label>
+    <input type="text" id="cardTitleInput" placeholder="這張卡片要完成什麼？" data-autofocus>
+  </div>
+
+  <div class="field-grid">
+    <div class="field-group">
+      <label for="cardColumnSelect">所在欄位</label>
+      <select id="cardColumnSelect"></select>
+    </div>
+    <div class="field-group">
+      <label for="cardAssigneeSelect">負責人</label>
+      <select id="cardAssigneeSelect"></select>
+    </div>
+  </div>
+
+  <div class="field-grid">
+    <div class="field-group">
+      <label for="cardDueInput">到期日</label>
+      <input type="date" id="cardDueInput">
+      <div class="seg-row" style="margin:2px 0 0;">
+        <button class="seg-btn" id="btnDueToday" type="button">今天</button>
+        <button class="seg-btn" id="btnDueClear" type="button">清除</button>
+      </div>
+    </div>
+    <div class="field-group">
+      <label for="cardPrioritySelect">優先級</label>
+      <select id="cardPrioritySelect"></select>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label for="cardDescInput">描述</label>
+    <textarea id="cardDescInput" placeholder="補充背景、驗收標準、相關連結…"></textarea>
+  </div>
+
+  <div class="field-group">
+    <label>標籤</label>
+    <div class="chip-row" id="cardLabelChips"></div>
+    <button class="add-row-btn" id="btnOpenLabelPicker">＋ 選擇或建立標籤</button>
+  </div>
+
+  <div class="inline-error hidden" id="cardError" role="alert"></div>
+
+  <div class="modal-actions" style="justify-content:space-between;">
+    <div id="cardDeleteArea"></div>
+    <div style="display:flex; gap:8px; margin-left:auto;">
+      <button class="btn-text" id="cardCancel">取消</button>
+      <button class="btn-primary" id="cardSave">儲存</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================= 標籤選擇器 ================= -->
+<div class="modal narrow" id="modalLabelPicker" role="dialog" aria-modal="true" aria-labelledby="pickerTitle" aria-hidden="true">
+  <h2 id="pickerTitle">選擇或建立標籤</h2>
+  <div class="modal-sub">標籤是「範本 ＋ 填好的值」，建立一次就能重複套用在多張卡片上。</div>
+  <div id="pickerExistingList"></div>
+  <button class="add-row-btn" id="btnRevealCreateLabel">＋ 建立新標籤</button>
+  <div class="label-create-box hidden" id="pickerCreateBox"></div>
+  <div class="modal-actions">
+    <button class="btn-secondary" id="pickerDone">完成</button>
+  </div>
+</div>
+
+
+<!-- ================= 全域搜尋 ================= -->
+<div class="modal wide" id="modalSearch" role="dialog" aria-modal="true" aria-labelledby="searchTitle" aria-hidden="true">
+  <h2 id="searchTitle" class="sr-only">全域搜尋</h2>
+  <div class="search-input-wrap">
+    <span class="icon" aria-hidden="true">⌕</span>
+    <input type="text" id="searchInput" placeholder="搜尋所有部門的卡片…" data-autofocus aria-label="全域搜尋卡片">
+  </div>
+  <div class="settings-hint" id="searchStatus" aria-live="polite"></div>
+  <div class="search-results" id="searchResults"></div>
+</div>
+
+
+<!-- ================= 設定 ================= -->
+<div class="modal" id="modalSettings" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" aria-hidden="true">
+  <h2 id="settingsTitle">設定</h2>
+  <div class="modal-sub">外觀偏好只套用在這台裝置、這個瀏覽器上；成員與公司名稱則是資料的一部分。</div>
+
+  <div class="drawer-section-title" style="margin-top:0;"><span>外觀</span></div>
+  <div class="field-group">
+    <label>主題</label>
+    <div class="seg-row" id="themeModeRow">
+      <button class="seg-btn" data-mode="system">系統預設</button>
+      <button class="seg-btn" data-mode="light">亮色</button>
+      <button class="seg-btn" data-mode="dark">深色</button>
+    </div>
+  </div>
+  <div class="field-group">
+    <label>配色</label>
+    <div class="swatch-row" id="accentSwatches"></div>
+  </div>
+  <div class="field-group">
+    <label>卡片密度</label>
+    <div class="seg-row" id="cardDensityRow">
+      <button class="seg-btn" data-density="standard">標準</button>
+      <button class="seg-btn" data-density="compact">精簡</button>
+    </div>
+  </div>
+  <div class="field-group">
+    <label class="toggle-row"><input type="checkbox" id="toggleShowLabels"> 卡片上顯示標籤</label>
+    <label class="toggle-row"><input type="checkbox" id="toggleShowMeta"> 卡片上顯示負責人與到期日</label>
+  </div>
+
+  <div class="drawer-section-title"><span>帳號與公司</span></div>
+  <div class="field-grid">
+    <div class="field-group">
+      <label for="settingsAccountName">你的顯示名稱</label>
+      <input type="text" id="settingsAccountName">
+    </div>
+    <div class="field-group">
+      <label for="settingsCompanyName">公司名稱</label>
+      <input type="text" id="settingsCompanyName">
+    </div>
+  </div>
+  <div class="field-group">
+    <label for="settingsWhoAmI">我是哪位成員</label>
+    <select id="settingsWhoAmI"></select>
+    <span class="settings-hint">指定後才能使用篩選列的「只看我的」，新增卡片時也會預設指派給你。</span>
+  </div>
+
+  <div class="drawer-section-title"><span>成員</span></div>
+  <div id="memberList"></div>
+  <div class="field-row" style="margin-top:10px;">
+    <input type="text" id="newMemberInput" placeholder="新成員姓名" aria-label="新成員姓名">
+    <button class="btn-secondary" id="btnAddMember" style="padding:7px 12px; font-size:12.5px;">新增</button>
+  </div>
+
+  <div class="drawer-section-title"><span>看板偏好</span></div>
+  <div class="field-group">
+    <label for="settingsDefaultBoardTpl">新看板的預設欄位</label>
+    <select id="settingsDefaultBoardTpl"></select>
+  </div>
+  <div class="field-group">
+    <label class="toggle-row"><input type="checkbox" id="toggleNewDeptExpanded"> 新增部門時預設展開看板列表</label>
+  </div>
+
+  <div class="drawer-section-title"><span>資料</span></div>
+  <div class="field-group" id="dataRow"></div>
+
+  <div class="modal-actions">
+    <button class="btn-secondary" id="settingsClose">完成</button>
+  </div>
+</div>
+
+
+<!-- ================= 匯出 ================= -->
+<div class="modal" id="modalExport" role="dialog" aria-modal="true" aria-labelledby="exportTitle" aria-hidden="true">
+  <h2 id="exportTitle">匯出備份</h2>
+  <div class="modal-sub">
+    完整的資料快照，可以存檔保管，或在另一台裝置用「匯入資料」還原。
+    <span id="exportSummary"></span>
+  </div>
+  <div class="field-group">
+    <label for="exportText">JSON 內容</label>
+    <textarea id="exportText" readonly style="min-height:200px; font-family:var(--font-mono); font-size:11.5px;"></textarea>
+  </div>
+  <div class="modal-actions" style="justify-content:space-between;">
+    <span class="settings-hint">若所在環境不允許下載，請改用「複製 JSON」。</span>
+    <span style="display:flex; gap:8px;">
+      <button class="btn-secondary" id="exportCopy">複製 JSON</button>
+      <button class="btn-primary" id="exportDownload">下載檔案</button>
+      <button class="btn-text" id="exportClose">關閉</button>
+    </span>
+  </div>
+</div>
+
+
+<!-- ================= 匯入 ================= -->
+<div class="modal" id="modalImport" role="dialog" aria-modal="true" aria-labelledby="importTitle" aria-hidden="true">
+  <h2 id="importTitle">匯入資料</h2>
+  <div class="modal-sub">選擇備份檔，或直接貼上 JSON。匯入會取代目前所有資料——但可以用「復原」撤回。</div>
+  <div class="field-group">
+    <label for="importFile">選擇備份檔</label>
+    <input type="file" id="importFile" accept="application/json,.json">
+  </div>
+  <div class="field-group">
+    <label for="importText">或直接貼上 JSON</label>
+    <textarea id="importText" placeholder="貼上匯出的 JSON…" style="min-height:150px; font-family:var(--font-mono); font-size:11.5px;"></textarea>
+  </div>
+  <div class="settings-hint hidden" id="importStatus" role="status" aria-live="polite"></div>
+  <div class="modal-actions">
+    <button class="btn-text" id="importClose">取消</button>
+    <button class="btn-primary" id="btnImportConfirm" disabled>確認匯入</button>
+  </div>
+</div>
+
+
+<!-- ================= 快捷鍵 ================= -->
+<div class="modal narrow" id="modalShortcuts" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle" aria-hidden="true">
+  <h2 id="shortcutsTitle">鍵盤快捷鍵</h2>
+  <div class="modal-sub">卡片可以用 Tab 聚焦，不需要滑鼠也能完整操作看板。</div>
+  <div class="shortcut-list">
+    <div class="shortcut-item"><span>全域搜尋</span><kbd>Ctrl / ⌘ + K</kbd></div>
+    <div class="shortcut-item"><span>在目前看板搜尋</span><kbd>/</kbd></div>
+    <div class="shortcut-item"><span>新增卡片</span><kbd>N</kbd></div>
+    <div class="shortcut-item"><span>復原上一步</span><kbd>Ctrl / ⌘ + Z</kbd></div>
+    <div class="shortcut-item"><span>開啟聚焦中的卡片</span><kbd>Enter</kbd></div>
+    <div class="shortcut-item"><span>卡片移到左／右欄</span><kbd>Ctrl / ⌘ + ← →</kbd></div>
+    <div class="shortcut-item"><span>卡片在欄內上下移</span><kbd>Ctrl / ⌘ + ↑ ↓</kbd></div>
+    <div class="shortcut-item"><span>關閉目前面板</span><kbd>Esc</kbd></div>
+    <div class="shortcut-item"><span>顯示這張表</span><kbd>?</kbd></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn-secondary" id="shortcutsClose">關閉</button>
+  </div>
+</div>
+
+
+<!-- ================= 程式 =================
+     載入順序即相依順序：常數 → 工具 → 資料 → 查詢 → 命令 → 介面。
+     刻意使用傳統 script 而非 ES module，這樣直接以 file:// 雙擊
+     開啟也能運作，不需要架本機伺服器。
+-->
+<script src="src/js/constants.js"></script>
+<script src="src/js/util.js"></script>
+<script src="src/js/store.js"></script>
+<script src="src/js/model.js"></script>
+<script src="src/js/actions.js"></script>
+<script src="src/js/theme.js"></script>
+<script src="src/js/overlay.js"></script>
+<script src="src/js/sidebar.js"></script>
+<script src="src/js/filters.js"></script>
+<script src="src/js/board.js"></script>
+<script src="src/js/card.js"></script>
+<script src="src/js/library.js"></script>
+<script src="src/js/settings.js"></script>
+<script src="src/js/dialogs.js"></script>
+<script src="src/js/search.js"></script>
+<script src="src/js/app.js"></script>
+
+</body>
+</html>

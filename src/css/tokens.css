@@ -1,0 +1,193 @@
+/* ============================================================
+   Zyra — 設計 token
+   色彩、字體、陰影、間距的單一事實來源。
+   所有顏色必須在此定義，元件層不得寫死色值。
+   ============================================================ */
+
+:root{
+  /* 文字 */
+  --ink:#171B24;
+  --ink-soft:#545B6C;
+  --ink-faint:#8A90A0;
+
+  /* 表面 */
+  --paper:#F1F2F5;
+  --surface:#FFFFFF;
+  --surface-sunken:#E7E9EE;
+  --surface-raised:#FFFFFF;
+
+  /* 邊界 */
+  --border:#DADDE3;
+  --border-strong:#C3C7D1;
+
+  /* 主色（由 theme.js 依使用者選擇覆寫） */
+  --accent:#0C6E58;
+  --accent-ink:#FFFFFF;
+  --accent-soft:#E1F0EA;
+
+  /* 語意色 */
+  --danger:#B23B3B;
+  --danger-soft:#F6E4E4;
+  --warn:#A8721F;
+  --warn-soft:#F6ECD9;
+  --ok:#2F7A4F;
+  --ok-soft:#E3F1E8;
+
+  /* 標籤色 */
+  --tag-teal:#0C6E58;   --tag-teal-soft:#E1F0EA;
+  --tag-gold:#A8721F;   --tag-gold-soft:#F6ECD9;
+  --tag-plum:#7C4A93;   --tag-plum-soft:#F1E6F5;
+  --tag-slate:#3B5B82;  --tag-slate-soft:#E7EDF5;
+  --tag-rose:#A83A5B;   --tag-rose-soft:#F7E3E9;
+  --tag-moss:#4A7A2F;   --tag-moss-soft:#E9F2E1;
+
+  /* 優先級 */
+  --pri-urgent:#B23B3B;
+  --pri-high:#C2600C;
+  --pri-normal:#8A90A0;
+  --pri-low:#A7ACBC;
+
+  /* 字體 */
+  --font-sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
+
+  /* 陰影 */
+  --shadow-lift:0 8px 24px -8px rgba(23,27,36,.28);
+  --shadow-pop:0 12px 32px -10px rgba(23,27,36,.34);
+
+  /* 圓角 */
+  --r-sm:6px;
+  --r-md:8px;
+  --r-lg:12px;
+  --r-xl:14px;
+
+  color-scheme:light;
+}
+
+/* 深色：系統偏好（除非使用者明確選了亮色） */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ink:#E7E9EE;
+    --ink-soft:#A7ACBC;
+    --ink-faint:#6D7385;
+
+    --paper:#13151C;
+    --surface:#1B1E27;
+    --surface-sunken:#20232D;
+    --surface-raised:#242834;
+
+    --border:#2B2F3B;
+    --border-strong:#3A3F4E;
+
+    --accent:#34B393;
+    --accent-ink:#0B140F;
+    --accent-soft:rgba(52,179,147,.16);
+
+    --danger:#E07575;
+    --danger-soft:rgba(224,117,117,.14);
+    --warn:#E0A94E;
+    --warn-soft:rgba(224,169,78,.14);
+    --ok:#5FBF85;
+    --ok-soft:rgba(95,191,133,.14);
+
+    --tag-teal:#34B393;   --tag-teal-soft:rgba(52,179,147,.14);
+    --tag-gold:#E0A94E;   --tag-gold-soft:rgba(224,169,78,.14);
+    --tag-plum:#C99BDE;   --tag-plum-soft:rgba(201,155,222,.14);
+    --tag-slate:#7FA8D9;  --tag-slate-soft:rgba(127,168,217,.14);
+    --tag-rose:#E08099;   --tag-rose-soft:rgba(224,128,153,.14);
+    --tag-moss:#8FC46A;   --tag-moss-soft:rgba(143,196,106,.14);
+
+    --pri-urgent:#E07575;
+    --pri-high:#E98A4A;
+    --pri-normal:#6D7385;
+    --pri-low:#4A4F5E;
+
+    --shadow-lift:0 8px 28px -8px rgba(0,0,0,.55);
+    --shadow-pop:0 14px 36px -10px rgba(0,0,0,.62);
+
+    color-scheme:dark;
+  }
+}
+
+/* 深色：使用者明確選擇（權重高於系統偏好） */
+:root[data-theme="dark"]{
+  --ink:#E7E9EE;
+  --ink-soft:#A7ACBC;
+  --ink-faint:#6D7385;
+
+  --paper:#13151C;
+  --surface:#1B1E27;
+  --surface-sunken:#20232D;
+  --surface-raised:#242834;
+
+  --border:#2B2F3B;
+  --border-strong:#3A3F4E;
+
+  --accent:#34B393;
+  --accent-ink:#0B140F;
+  --accent-soft:rgba(52,179,147,.16);
+
+  --danger:#E07575;
+  --danger-soft:rgba(224,117,117,.14);
+  --warn:#E0A94E;
+  --warn-soft:rgba(224,169,78,.14);
+  --ok:#5FBF85;
+  --ok-soft:rgba(95,191,133,.14);
+
+  --tag-teal:#34B393;   --tag-teal-soft:rgba(52,179,147,.14);
+  --tag-gold:#E0A94E;   --tag-gold-soft:rgba(224,169,78,.14);
+  --tag-plum:#C99BDE;   --tag-plum-soft:rgba(201,155,222,.14);
+  --tag-slate:#7FA8D9;  --tag-slate-soft:rgba(127,168,217,.14);
+  --tag-rose:#E08099;   --tag-rose-soft:rgba(224,128,153,.14);
+  --tag-moss:#8FC46A;   --tag-moss-soft:rgba(143,196,106,.14);
+
+  --pri-urgent:#E07575;
+  --pri-high:#E98A4A;
+  --pri-normal:#6D7385;
+  --pri-low:#4A4F5E;
+
+  --shadow-lift:0 8px 28px -8px rgba(0,0,0,.55);
+  --shadow-pop:0 14px 36px -10px rgba(0,0,0,.62);
+
+  color-scheme:dark;
+}
+
+/* ---------- base ---------- */
+
+*{box-sizing:border-box;}
+
+html,body{height:100%;}
+
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--font-sans);
+  font-size:14px;
+  -webkit-font-smoothing:antialiased;
+}
+
+h1,h2,h3{margin:0; text-wrap:balance;}
+
+button{font-family:inherit; cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+img{max-width:100%;}
+
+[hidden]{display:none !important;}
+.hidden{display:none !important;}
+
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:3px;}
+
+/* 只給螢幕閱讀器 */
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+
+/* 尊重減少動態偏好 */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    transition-duration:.001ms !important;
+  }
+}
