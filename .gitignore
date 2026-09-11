@@ -1,0 +1,43 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# ---- 虛擬環境 ----
+.venv/
+venv/
+env/
+
+# ---- 密鑰與環境變數（絕不進版控）----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+token.json
+client_secret*.json
+service-account*.json
+
+# ---- 前端（日後若導入 Node 工具鏈）----
+node_modules/
+
+# ---- 編輯器 ----
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# ---- 作業系統 ----
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# ---- 日誌與暫存 ----
+*.log
+*.tmp
