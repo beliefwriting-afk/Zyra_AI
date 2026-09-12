@@ -2,22 +2,72 @@
 
 部門、看板、卡片與結構化標籤的專案管理系統。
 
-零框架、零依賴、無建置步驟——直接用瀏覽器開啟 `index.html` 就能運作。
+前端零框架、零依賴、無建置步驟。後端是一支 Flask，只做兩件事：
+擋住沒被授權的人，以及把資料存在使用者的裝置之外。
+
+---
+
+## 兩種執行模式
+
+由 `src/js/config.js` 的 `mode` 決定，這是整份程式裡唯一因環境而異的地方。
+
+| mode | 資料存在哪 | 需要登入 | 用途 |
+|---|---|---|---|
+| `local` | 這個瀏覽器的 localStorage | 否 | 雙擊 `index.html` 即可用；Artifact 展示版 |
+| `server` | 後端 SQLite，跨裝置同步 | Google 帳號 | 正式使用 |
+| `auto` | `file://` → local，其餘 → server | — | 預設值 |
+
+刻意**不做**「偵測後端是否活著，掛了就退回 localStorage」。
+那會讓正式環境在後端故障時靜默改用本機資料，使用者以為有存、實際沒同步。
+寧可明確失敗。
 
 ---
 
 ## 快速開始
 
-**最簡單**：雙擊 `index.html`。
+### 單機試用（不需要後端）
 
-**用本機伺服器**（開發時建議，重新整理行為較一致）：
+雙擊 `index.html`。
+
+### 完整版（含登入）
+
+**一、Google Cloud Console**
+
+1. 建立專案 → 「API 和服務」→「OAuth 同意畫面」
+2. 「憑證」→ 建立「OAuth 2.0 用戶端 ID」→ 類型選**網頁應用程式**
+3. 「已授權的 JavaScript 來源」加入 `http://localhost:8000`
+   （Google 對 localhost 有 http 例外；正式網域必須是 HTTPS）
+4. 複製 Client ID，填進 `src/js/config.js` 的 `googleClientId`
+   —— 這是公開值，可以進版控；機密的是 client secret，而我們用不到它
+
+**二、後端設定**
 
 ```powershell
 Set-Location C:\Users\erics\Desktop\Zyra_AI
-.\.venv\Scripts\python.exe -m http.server 8000
+.\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+
+# 產生 session 簽章金鑰
+.\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
+
+Copy-Item backend\.env.example backend\.env
+notepad backend\.env    # 填入金鑰、Client ID、白名單 email
 ```
 
-然後開 <http://localhost:8000>。
+**三、啟動**
+
+```powershell
+Set-Location C:\Users\erics\Desktop\Zyra_AI\backend
+..\.venv\Scripts\python.exe app.py
+```
+
+然後開 <http://localhost:8000>。設定若有缺漏，啟動時會直接在終端機印出來。
+
+### 測試
+
+```powershell
+Set-Location C:\Users\erics\Desktop\Zyra_AI\backend
+..\.venv\Scripts\python.exe -m unittest test_api -v
+```
 
 ---
 
@@ -26,12 +76,21 @@ Set-Location C:\Users\erics\Desktop\Zyra_AI
 ```
 Zyra_AI/
 ├── index.html              頁面骨架與所有 modal／抽屜的 DOM
+├── backend/
+│   ├── app.py              Flask 應用：靜態檔 ＋ /api/*
+│   ├── auth.py             Google ID token 驗證、白名單、session
+│   ├── db.py               SQLite 存取（唯一碰資料庫的地方）
+│   ├── config.py           從環境變數讀設定
+│   ├── test_api.py         後端測試（標準函式庫 unittest）
+│   ├── requirements.txt
+│   └── .env.example        機密範本；真正的 .env 不進版控
 ├── src/
 │   ├── css/
 │   │   ├── tokens.css      設計 token：色彩、字體、陰影、主題、base reset
 │   │   ├── layout.css      版面：側邊欄、頂欄、篩選列、看板區
 │   │   └── components.css  元件：按鈕、卡片、chip、modal、toast、表單
 │   └── js/
+│       ├── config.js       執行模式與 Google Client ID ★
 │       ├── constants.js    列舉與常數（單一事實來源）
 │       ├── util.js         無狀態工具：逸出、日期、文字比對
 │       ├── store.js        state 載入、結構升級、持久化、匯出匯入
@@ -47,6 +106,7 @@ Zyra_AI/
 │       ├── settings.js     設定、成員、匯出匯入
 │       ├── dialogs.js      建立部門／看板／欄位
 │       ├── search.js       全域搜尋
+│       ├── auth.js         登入畫面、同步狀態、衝突處理
 │       └── app.js          初始化、render 協調、快捷鍵
 └── README.md
 ```
@@ -136,9 +196,47 @@ state
 
 ### 持久化與升級
 
-- 存在 `localStorage`，鍵值 `department-kanban-state-v1`（沿用舊名，確保既有使用者資料讀得到）
+`store.js` 的 driver 層是整個系統唯一的 I/O 出入口：
+
+```
+read()          → Promise<{data, version}>
+persist(state)  → boolean       同步；true 表示變更已被接受保存
+flush()         → Promise       把待送出的變更立刻送出
+```
+
+`persist()` 刻意維持「同步呼叫、立即回傳布林」的簽名。
+若讓它變成 async，`actions.dispatch()` 就得跟著 async，
+然後 38 個 action 的呼叫端全部要改。
+**同步的外觀、非同步的內裡**，是讓接後端這件事只改到一個檔案的關鍵。
+
+- local driver：`localStorage`，鍵值 `department-kanban-state-v1`（沿用舊名，確保既有使用者資料讀得到）
+- server driver：`PUT /api/state`，debounce 600ms；`localStorage` 降級為離線快取
 - `store.migrate()` 會把任何舊版資料補齊到目前 schema，原則是**只補不刪**
 - 同時會清掉指向已刪除標籤／成員的孤兒參照
+
+### 後端
+
+| 方法 | 路徑 | 說明 |
+|---|---|---|
+| POST | `/api/auth/google` | 驗證 Google ID token，建立 session |
+| POST | `/api/auth/logout` | 清除 session |
+| GET | `/api/me` | 目前登入者；未登入回 401 |
+| GET | `/api/state` | `{version, data, updatedAt}` |
+| PUT | `/api/state` | 帶 `{version, data}`；版本不符回 409 |
+
+**身分**以 `google_sub` 為主鍵，不是 email——email 可以被使用者改，
+`sub` 永不變。白名單比對用 email（人看得懂、好維護），帳號綁定用 `sub`。
+
+**樂觀鎖**：`PUT` 帶上前端持有的版本號，不符就回 409 並附上伺服器端的完整資料，
+前端跳出比較視窗讓使用者選一邊。雖然是單人使用，但「筆電開著、手機也開著」
+是必然會發生的；沒有這道鎖，後存的那台會靜默吃掉另一台的變更。
+
+**state 存整包 JSON 而不拆表**：拆表意味著前端資料模型改一次、
+後端 schema 就要跟著遷移一次。升級邏輯已經在 `store.migrate()` 裡，留在前端一處就好。
+
+**靜態檔逐條列出**（`/` 與 `/src/<path>`），而不是把專案根目錄掛成 `static_folder`。
+後者會連 `backend/.env`、`backend/zyra.db`、`.git/` 都一起對外開放。
+`test_api.py` 有一條測試專門守這件事。
 
 ---
 
@@ -206,13 +304,54 @@ state
 - 顏色一律用 CSS 變數，元件層不得寫死色值
 - 新增列舉值放進 `constants.js`，不要讓字串散落各處
 - 新增功能若會改資料，先在 `actions.js` 定義 action，UI 再呼叫它
+- **UI 模組不得直接寫 `Zyra.store.state`**，也不得直接呼叫 `fetch`——
+  所有 I/O 都要經過 store driver
+- 後端新增端點時，改完記得補一條 `test_api.py`；那份測試跑起來不到一秒
+
+---
+
+## 部署到 VM
+
+```bash
+# 1. 取得程式與相依套件
+git clone https://github.com/beliefwriting-afk/Zyra_AI.git /srv/zyra
+cd /srv/zyra
+python3 -m venv .venv
+.venv/bin/pip install -r backend/requirements.txt
+
+# 2. 設定（資料庫放在持久磁碟上，不要放在 git 工作目錄裡）
+sudo mkdir -p /var/lib/zyra && sudo chown zyra:zyra /var/lib/zyra
+cp backend/.env.example backend/.env
+$EDITOR backend/.env       # ZYRA_ENV=production、ZYRA_DB_PATH=/var/lib/zyra/zyra.db
+
+# 3. 跑起來
+.venv/bin/gunicorn -w 2 -b 127.0.0.1:8000 --chdir backend app:application
+```
+
+`-w 2`：SQLite 寫入本來就是序列化的，worker 開多不會更快，反而增加鎖競爭。
+兩個足以吸收讀取。
+
+**Nginx** 反向代理到 `127.0.0.1:8000`，TLS 用 Let's Encrypt。
+`ZYRA_ENV=production` 會自動開啟 `Secure` cookie——所以**必須**先有 HTTPS，
+否則 cookie 送不出去、登入會一直失敗。
+
+**Google Cloud Console** 的「已授權的 JavaScript 來源」要加上正式網域
+（`https://zyra.example.com`），否則登入按鈕不會運作。
+
+**備份**：SQLite 就是一個檔案，但執行中不能直接 `cp`（WAL 可能不一致）：
+
+```bash
+sqlite3 /var/lib/zyra/zyra.db ".backup /backup/zyra-$(date +%F).db"
+```
+
+排進 cron，保留 30 天。這是資料唯一的副本，不備份等於沒有。
 
 ---
 
 ## 已知限制
 
-- **純本機單人**：資料只存在該瀏覽器，換裝置看不到。請定期匯出備份
-- **無權限概念**：成員只是名單，沒有登入與授權
+- **單人**：每個帳號一份資料，沒有多人協作、沒有共享看板。成員只是名單，不是登入帳號
+- **白名單制**：新增使用者要改 `backend/.env` 並重啟後端，沒有管理介面
 - **全量重繪**：卡片數達數百張後會有可感知的延遲。屆時再改增量渲染，目前不值得預先優化
 - 沒有留言、附件、封存、批次操作；活動只有建立／更新時間，沒有逐項軌跡
 - 只有看板檢視，沒有表格／時間軸／行事曆
@@ -229,4 +368,5 @@ state
 - `Zyra.model.snapshot()` → 系統現況的精簡結構化描述，作為餵給模型的上下文
 - 復原堆疊 → AI 的每一個動作使用者都能一鍵撤回
 
-尚待決定：模型供應商與金鑰保管方式（純前端無法安全保存 API key，這一步大機率需要一層後端代理）。
+模型供應商與金鑰保管方式尚待決定，但**後端這一層已經存在了**——
+API key 放在 `backend/.env`、由 Flask 代理呼叫模型，是現成的路。
