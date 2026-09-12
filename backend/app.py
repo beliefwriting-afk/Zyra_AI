@@ -14,6 +14,7 @@ from datetime import timedelta
 
 from flask import Flask, jsonify, request, send_from_directory
 
+import agent
 import auth
 import db
 from config import Config, startup_warnings
@@ -31,6 +32,7 @@ def create_app() -> Flask:
         JSON_SORT_KEYS=False,
     )
     app.teardown_appcontext(db.close)
+    app.register_blueprint(agent.bp)
     db.init()
 
     # ---------- 靜態檔 ----------

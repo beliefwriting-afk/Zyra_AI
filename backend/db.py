@@ -80,24 +80,54 @@ def upsert_user(sub: str, email: str, name: str, picture: str) -> dict:
 
     email 可以被使用者在 Google 端改掉，sub 則永不變。
     白名單比對用 email（人看得懂、好維護），帳號綁定用 sub。
+
+    三條路徑，第二條是被測試撞出來的：
+
+    1. sub 已存在      → 更新 email／名稱／頭像
+    2. sub 不存在，但 email 已被另一個 sub 佔用
+                       → 把那筆改綁到新 sub（見下）
+    3. 兩者都不存在    → 新建
+
+    第二條原本只寫成 `ON CONFLICT(google_sub) DO UPDATE`，於是
+    「同一個 email 帶著新的 sub 登入」會撞上 email 的 UNIQUE 約束、
+    丟出 IntegrityError 變成 500——使用者只會看到登不進去，毫無線索。
+    這在現實中會發生：Google 帳號被刪除後重建、或 Workspace 帳號重新開立，
+    email 沒變但 sub 換了新的。
+
+    改綁而不是拒絕，是因為**授權的單位本來就是 email**：
+    白名單放行的是這個地址，而 Google 已經驗證過對方確實持有它。
+    拒絕的話，使用者不但登不進去，既有資料也等於憑空消失。
     """
     conn = get()
     ts = now()
-    conn.execute(
-        """
-        INSERT INTO users (google_sub, email, name, picture, created_at, last_login_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ON CONFLICT(google_sub) DO UPDATE SET
-          email = excluded.email,
-          name = excluded.name,
-          picture = excluded.picture,
-          last_login_at = excluded.last_login_at
-        """,
-        (sub, email, name, picture, ts, ts),
-    )
-    conn.commit()
+
     row = conn.execute("SELECT * FROM users WHERE google_sub = ?", (sub,)).fetchone()
-    return dict(row)
+    if row is None:
+        row = conn.execute(
+            "SELECT * FROM users WHERE lower(email) = lower(?)", (email,)
+        ).fetchone()
+        if row is not None:
+            conn.execute(
+                "UPDATE users SET google_sub = ?, email = ?, name = ?, picture = ?, "
+                "last_login_at = ? WHERE id = ?",
+                (sub, email, name, picture, ts, row["id"]),
+            )
+            conn.commit()
+            return dict(conn.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone())
+
+        conn.execute(
+            "INSERT INTO users (google_sub, email, name, picture, created_at, last_login_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (sub, email, name, picture, ts, ts),
+        )
+    else:
+        conn.execute(
+            "UPDATE users SET email = ?, name = ?, picture = ?, last_login_at = ? WHERE id = ?",
+            (email, name, picture, ts, row["id"]),
+        )
+
+    conn.commit()
+    return dict(conn.execute("SELECT * FROM users WHERE google_sub = ?", (sub,)).fetchone())
 
 
 def get_user(user_id: int):

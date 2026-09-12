@@ -43,6 +43,29 @@
     PRIORITIES: ['urgent', 'high', 'normal', 'low'],
     PRIORITY_LABELS: { urgent: '緊急', high: '高', normal: '一般', low: '低' },
 
+    /**
+     * 開放給 AI 代理的 action 白名單。
+     *
+     * 為什麼不是「全部 38 個」：工具愈多，模型選錯的機率愈高，
+     * 而且第一版若品質不好，會分不清是「模型不會用」還是「工具太多挑花了」。
+     * 先開這組最常用的，確認品質後再放。
+     *
+     * 名單外的 action 不會出現在工具定義裡，模型無從呼叫——
+     * agent.js 執行前也會再擋一次，不靠模型自律。
+     */
+    AI_TOOLS: [
+      // 先看清楚，再動手
+      'listStructure', 'findCards', 'getCard',
+      // 卡片
+      'createCard', 'updateCard', 'moveCard', 'duplicateCard', 'deleteCard',
+      // 檢查清單
+      'addChecklistItem', 'toggleChecklistItem',
+      // 結構
+      'createDepartment', 'createBoard', 'addColumn', 'renameBoard',
+      // 成員與導覽
+      'addMember', 'setActiveBoard'
+    ],
+
     /** 到期狀態篩選 */
     DUE_FILTERS: {
       '': '到期：全部',

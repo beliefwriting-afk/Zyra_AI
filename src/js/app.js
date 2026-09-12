@@ -170,6 +170,7 @@
     Z.settings.init();
     Z.dialogs.init();
     Z.search.init();
+    if (Z.agent) Z.agent.init();
 
     document.getElementById('btnColumns').addEventListener('click', function () {
       var b = M.activeBoard();

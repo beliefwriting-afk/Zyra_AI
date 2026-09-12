@@ -168,6 +168,7 @@
     },
 
     deleteDepartment: {
+      destructive: true,
       label: '刪除部門',
       params: { deptId: { type: 'string', required: true, desc: '部門 id' } },
       run: function (p) {
@@ -229,6 +230,7 @@
     },
 
     deleteBoard: {
+      destructive: true,
       label: '刪除看板',
       params: { boardId: { type: 'string', required: true, desc: '看板 id' } },
       run: function (p) {
@@ -286,6 +288,7 @@
      * 流程調整本來就常伴隨欄位合併。
      */
     deleteColumn: {
+      destructive: true,
       label: '刪除看板欄位',
       params: {
         boardId: { type: 'string', required: true, desc: '看板 id' },
@@ -401,6 +404,7 @@
     },
 
     deleteCard: {
+      destructive: true,
       label: '刪除卡片',
       params: { cardId: { type: 'string', required: true, desc: '卡片 id' } },
       run: function (p) {
@@ -536,6 +540,7 @@
     },
 
     deleteChecklistItem: {
+      destructive: true,
       label: '刪除子任務',
       params: {
         cardId: { type: 'string', required: true, desc: '卡片 id' },
@@ -584,6 +589,7 @@
     },
 
     deleteTemplate: {
+      destructive: true,
       label: '刪除範本',
       params: {
         deptId: { type: 'string', required: true, desc: '部門 id' },
@@ -701,6 +707,7 @@
     },
 
     deleteLabel: {
+      destructive: true,
       label: '刪除標籤',
       params: {
         deptId: { type: 'string', required: true, desc: '部門 id' },
@@ -756,6 +763,7 @@
     },
 
     deleteMember: {
+      destructive: true,
       label: '移除成員',
       params: { memberId: { type: 'string', required: true, desc: '成員 id' } },
       run: function (p) {
@@ -776,6 +784,7 @@
     // ===== 資料 =====
 
     importData: {
+      destructive: true,
       label: '匯入資料',
       params: { data: { type: 'object', required: true, desc: '匯出檔內容或 state 物件' } },
       run: function (p) {
@@ -788,15 +797,123 @@
     },
 
     loadSample: {
+      destructive: true,
       label: '載入範例資料',
       params: {},
       run: function () { Z.store.loadSample(); return { ok: true, message: '已載入範例資料' }; }
     },
 
     resetEmpty: {
+      destructive: true,
       label: '清空所有資料',
       params: {},
       run: function () { Z.store.resetEmpty(); return { ok: true, message: '已清空所有資料' }; }
+    },
+
+    // ===== 唯讀查詢 =====
+    // 這三個是為 AI 補的。使用者用眼睛看畫面就知道有什麼，
+    // 模型沒有眼睛——不給它查詢工具，它只能猜 id，而猜錯的後果
+    // 是改到別張卡片，且看起來像成功。
+
+    listStructure: {
+      label: '列出部門、看板與欄位結構', readOnly: true,
+      desc: '取得整個系統的結構：部門、看板、欄位、成員、標籤，以及各欄的卡片數。不含卡片內容。開始任何操作前先呼叫這個，才能拿到正確的 id。',
+      params: {},
+      run: function () {
+        return { ok: true, data: M.snapshot() };
+      }
+    },
+
+    findCards: {
+      label: '搜尋卡片', readOnly: true,
+      desc: '依條件找卡片，回傳精簡列表（含 id）。要對某張卡片做事之前，先用這個拿到它的 id。',
+      params: {
+        query: { type: 'string', required: false, desc: '關鍵字，比對標題、描述、負責人姓名與標籤' },
+        boardId: { type: 'string', required: false, desc: '限定在某個看板內' },
+        assigneeId: { type: 'string', required: false, desc: '限定負責人；傳 "none" 表示未指派' },
+        due: { type: 'string', required: false, desc: '到期狀態', values: ['overdue', 'today', 'week', 'none'] },
+        priority: { type: 'string', required: false, desc: '優先級', values: C.PRIORITIES },
+        limit: { type: 'number', required: false, desc: '最多回傳幾筆，預設 30' }
+      },
+      run: function (p) {
+        var today = util.today();
+        var weekEnd = (function () {
+          var d = new Date(); d.setDate(d.getDate() + 7); return util.toISODate(d);
+        })();
+        var limit = Math.min(parseInt(p.limit, 10) || 30, 100);
+        var out = [];
+
+        S().departments.forEach(function (dept) {
+          dept.boards.forEach(function (board) {
+            if (p.boardId && board.id !== p.boardId) return;
+            S().cards.forEach(function (card) {
+              if (card.boardId !== board.id || out.length >= limit) return;
+
+              if (p.query) {
+                var q = String(p.query);
+                var hit = util.matches(card.title, q) || util.matches(card.description, q)
+                  || util.matches(M.memberName(card.assigneeId), q)
+                  || M.labelsOfCard(dept, card).some(function (l) {
+                    return util.matches(M.labelPrimaryText(dept, l), q);
+                  });
+                if (!hit) return;
+              }
+              if (p.assigneeId === 'none') { if (card.assigneeId) return; }
+              else if (p.assigneeId && card.assigneeId !== p.assigneeId) return;
+              if (p.priority && card.priority !== p.priority) return;
+
+              if (p.due === 'overdue' && !(card.dueDate && card.dueDate < today)) return;
+              if (p.due === 'today' && card.dueDate !== today) return;
+              if (p.due === 'week' && !(card.dueDate && card.dueDate >= today && card.dueDate <= weekEnd)) return;
+              if (p.due === 'none' && card.dueDate) return;
+
+              var col = board.columns.find(function (c) { return c.id === card.columnId; });
+              out.push({
+                id: card.id, title: card.title,
+                deptName: dept.name, boardId: board.id, boardName: board.name,
+                columnId: card.columnId, columnName: col ? col.name : '—',
+                assignee: M.memberName(card.assigneeId) || null,
+                dueDate: card.dueDate || null,
+                priority: card.priority,
+                overdue: !!(card.dueDate && card.dueDate < today)
+              });
+            });
+          });
+        });
+
+        return { ok: true, data: { count: out.length, today: today, cards: out } };
+      }
+    },
+
+    getCard: {
+      label: '取得卡片完整內容', readOnly: true,
+      desc: '讀出單張卡片的描述、檢查清單與標籤內容。',
+      params: { cardId: { type: 'string', required: true, desc: '卡片 id' } },
+      run: function (p) {
+        var card = M.getCard(p.cardId);
+        if (!card) return { ok: false, error: '找不到卡片：' + p.cardId };
+        var dept = M.deptOfBoard(card.boardId);
+        var board = M.getBoard(card.boardId);
+        var col = board && board.columns.find(function (c) { return c.id === card.columnId; });
+        return {
+          ok: true,
+          data: {
+            id: card.id, title: card.title, description: card.description,
+            boardId: card.boardId, boardName: board ? board.name : null,
+            columnId: card.columnId, columnName: col ? col.name : null,
+            assignee: M.memberName(card.assigneeId) || null,
+            assigneeId: card.assigneeId || null,
+            dueDate: card.dueDate || null, priority: card.priority,
+            checklist: card.checklist.map(function (it) {
+              return { id: it.id, text: it.text, done: it.done };
+            }),
+            labels: dept ? M.labelsOfCard(dept, card).map(function (l) {
+              return { id: l.id, text: M.labelPrimaryText(dept, l), fields: M.labelSummary(dept, l) };
+            }) : [],
+            createdAt: card.createdAt, updatedAt: card.updatedAt
+          }
+        };
+      }
     }
   };
 
@@ -820,6 +937,18 @@
     var required = Object.keys(def.params || {}).filter(function (k) { return def.params[k].required; });
     var miss = need(p, required);
     if (miss) return { ok: false, error: miss };
+
+    // 唯讀查詢：不推復原快照、不寫入、不重繪、不跳 toast。
+    // 這些 action 存在的理由是讓 AI 能先看清楚再動手——
+    // 讓它們跟寫入操作走同一個 dispatch，schema() 才會一併描述它們，
+    // 不必為 AI 另外維護一份查詢介面。
+    if (def.readOnly) {
+      try {
+        return def.run(p) || { ok: true };
+      } catch (e) {
+        return { ok: false, error: '查詢發生錯誤：' + (e && e.message ? e.message : e) };
+      }
+    }
 
     var snapshotTaken = false;
     if (!def.transient) {
@@ -870,8 +999,13 @@
       var d = defs[name];
       return {
         name: name,
-        description: d.label,
-        mutating: !d.transient,
+        description: d.desc || d.label,
+        mutating: !d.transient && !d.readOnly,
+        readOnly: !!d.readOnly,
+        // 破壞性與否是 action 自己的性質，所以標在定義上。
+        // 若改成在 AI 那層維護一份「危險清單」，新增 action 時一定會忘記更新，
+        // 而忘記的後果是資料被無聲刪掉。
+        destructive: !!d.destructive,
         parameters: Object.keys(d.params || {}).map(function (k) {
           var p = d.params[k];
           return {

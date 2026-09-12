@@ -151,6 +151,18 @@
 
   function renderSync(sync) {
     if (!el.pill) return;
+
+    // 展示版：借用同步狀態那個位置。使用者會去看那一角來判斷
+    // 「我的資料現在在哪裡」，提示放在同一處才找得到。
+    if (CFG.demoNotice) {
+      el.pill.classList.remove('hidden');
+      el.pill.className = 'sync-pill warn';
+      el.pill.textContent = '展示版';
+      el.pill.title = '這是公開展示版：資料只存在這個瀏覽器，重新整理還在，'
+        + '但不會同步到其他裝置或任何伺服器。可用「設定 → 資料」匯出備份。';
+      return;
+    }
+
     if (sync.mode !== 'server' || !LABEL[sync.status]) {
       el.pill.classList.add('hidden');
       return;

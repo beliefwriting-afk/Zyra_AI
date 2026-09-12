@@ -3,8 +3,18 @@
 # 而死鎖會讓安全性修補也一起被擋住。
 
 Flask>=3.0,<4.0
-google-auth>=2.28,<3.0
 python-dotenv>=1.0,<2.0
+
+# [requests] 這個附加元件不能省。
+# google-auth 把 requests 當選用相依，只在使用 google.auth.transport.requests
+# 時才需要——而 auth.py 驗證 ID token 走的正是這條路徑。
+# 寫成 google-auth 而不加 [requests]，會裝得起來但一 import 就炸。
+google-auth[requests]>=2.28,<3.0
+
+# agent.py 直接用它呼叫 Gemini REST API。
+# 上面那行已經會裝進來，這裡明寫是因為我們自己也在用——
+# 哪天 google-auth 換掉 transport，這個相依不該跟著消失。
+requests>=2.31,<3.0
 
 # 正式環境用；開發時 flask 內建伺服器就夠了
 gunicorn>=21.2,<24.0

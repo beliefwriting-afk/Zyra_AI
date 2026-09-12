@@ -98,6 +98,16 @@
   </div>
 </div>
 
+<!-- ================= AI 助理浮動按鈕 =================
+     固定在右下角，不放進頂欄：頂欄那組在沒有看板時會整個隱藏，
+     而「還沒有任何看板」正是最需要助理幫忙開場的時候。
+     z-index 刻意低於 .overlay（40），開任何面板時它會跟著被遮暗，
+     跟系統其他元件的層次一致。
+-->
+<button class="ai-fab hidden" id="btnAI" title="AI 助理" aria-label="開啟 AI 助理">
+  <span class="ai-fab-icon" aria-hidden="true">✦</span>
+</button>
+
 <!-- 螢幕閱讀器即時播報 -->
 <div id="liveRegion" class="sr-only" role="status" aria-live="polite"></div>
 
@@ -441,6 +451,28 @@
 </div>
 
 
+<!-- ================= AI 助理 ================= -->
+<aside class="drawer ai-drawer" id="aiDrawer" role="dialog" aria-modal="true" aria-labelledby="aiTitle" aria-hidden="true">
+  <div class="ai-head">
+    <h2 id="aiTitle">AI 助理</h2>
+    <button class="pill-btn" id="aiReset" title="清空對話重新開始">新對話</button>
+    <button class="icon-btn" id="aiClose" title="關閉" aria-label="關閉助理">×</button>
+  </div>
+
+  <div class="ai-log" id="aiLog" role="log" aria-live="polite"></div>
+
+  <div class="ai-thinking hidden" id="aiThinking" aria-hidden="true">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+  </div>
+
+  <div class="ai-compose">
+    <textarea id="aiInput" rows="2" aria-label="對助理說的話"
+      placeholder="請助理做什麼？Enter 送出、Shift+Enter 換行"></textarea>
+    <button class="btn-primary" id="aiSend">送出</button>
+  </div>
+</aside>
+
+
 <!-- ================= 同步衝突 ================= -->
 <div class="modal narrow" id="modalConflict" role="dialog" aria-modal="true" aria-labelledby="conflictTitle" aria-hidden="true">
   <h2 id="conflictTitle">這份資料在別處被改過</h2>
@@ -502,6 +534,7 @@
 <script src="src/js/dialogs.js"></script>
 <script src="src/js/search.js"></script>
 <script src="src/js/auth.js"></script>
+<script src="src/js/agent.js"></script>
 <script src="src/js/app.js"></script>
 
 </body>

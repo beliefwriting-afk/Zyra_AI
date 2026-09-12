@@ -46,6 +46,11 @@ class Config:
         if e.strip()
     )
 
+    # Gemini API key。只存在後端，前端永遠拿不到——
+    # 純前端保不住金鑰，這是當初非得有一層後端不可的原因之一。
+    GEMINI_API_KEY = os.environ.get("ZYRA_GEMINI_API_KEY", "").strip()
+    GEMINI_MODEL = os.environ.get("ZYRA_GEMINI_MODEL", "gemini-2.5-flash").strip()
+
     # --- 部署 ---
 
     DB_PATH = Path(os.environ.get("ZYRA_DB_PATH", BACKEND_DIR / "zyra.db"))
