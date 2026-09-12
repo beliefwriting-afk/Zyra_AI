@@ -642,3 +642,86 @@ kbd{
 }
 .lib-row-go{color:var(--ink-faint); font-size:15px; flex:0 0 auto;}
 .lib-row:hover .lib-row-go{color:var(--accent);}
+
+/* ============================================================
+   登入畫面
+   server 模式下未登入時覆蓋整個應用。
+   ============================================================ */
+
+.login-screen{
+  position:fixed; inset:0; z-index:200;
+  display:none; align-items:center; justify-content:center;
+  padding:24px;
+  background:var(--paper);
+}
+.login-screen.show{display:flex;}
+body.login-open{overflow:hidden;}
+
+.login-card{
+  width:100%; max-width:380px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-xl);
+  box-shadow:var(--shadow-lift);
+  padding:40px 32px 34px;
+  text-align:center;
+}
+.login-wordmark{
+  font-size:30px; font-weight:700; letter-spacing:.005em;
+  color:var(--ink); line-height:1; margin-bottom:12px;
+}
+.login-sub{
+  font-size:13.5px; line-height:1.7; color:var(--ink-soft);
+  margin:0 0 26px;
+}
+/* GIS 自己算寬度，這裡只負責置中 */
+.login-btn-slot{display:flex; justify-content:center; min-height:44px;}
+
+.login-error{
+  margin-top:18px; padding:10px 12px;
+  background:var(--danger-soft); color:var(--danger);
+  border-radius:var(--r-md);
+  font-size:12.5px; line-height:1.6; text-align:left;
+}
+.login-warn{
+  font-size:12.5px; line-height:1.7; color:var(--ink-faint);
+  background:var(--surface-sunken); border-radius:var(--r-md);
+  padding:10px 12px; text-align:left;
+}
+.login-warn code{font-family:var(--font-mono); font-size:11.5px; color:var(--ink);}
+
+/* ============================================================
+   同步狀態
+   資料存在別人的伺服器上而使用者看不到同步狀態，是不敢用的主因。
+   這顆 pill 不是裝飾。
+   ============================================================ */
+
+.sync-pill{
+  border:1px solid var(--border); background:var(--surface);
+  color:var(--ink-faint);
+  font-size:11px; font-weight:600; font-family:var(--font-mono);
+  padding:4px 10px; border-radius:999px;
+  flex:0 0 auto; white-space:nowrap;
+}
+.sync-pill.ok{color:var(--ok); border-color:var(--ok); background:var(--ok-soft);}
+.sync-pill.warn{color:var(--warn); border-color:var(--warn); background:var(--warn-soft);}
+.sync-pill.danger{color:var(--danger); border-color:var(--danger); background:var(--danger-soft);}
+.sync-pill.busy{color:var(--accent); border-color:var(--accent); background:var(--accent-soft);}
+
+/* ---------- 衝突比較 ---------- */
+
+.conflict-cols{display:flex; gap:10px; margin:4px 0 8px;}
+.conflict-col{
+  flex:1 1 0; min-width:0;
+  background:var(--surface-sunken); border-radius:var(--r-md);
+  padding:12px 13px;
+}
+.conflict-col h4{font-size:13px; font-weight:700; margin:0 0 4px; color:var(--ink);}
+.conflict-sub{font-size:11.5px; color:var(--ink-faint); line-height:1.6; margin-bottom:9px;}
+.conflict-counts{display:flex; flex-direction:column; gap:3px;}
+.conflict-counts span{font-family:var(--font-mono); font-size:11.5px; color:var(--ink-soft);}
+
+@media (max-width:520px){
+  .conflict-cols{flex-direction:column;}
+  .login-card{padding:32px 22px 26px;}
+}

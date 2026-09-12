@@ -108,12 +108,53 @@
 
   // ---------- 啟動 ----------
 
+  /**
+   * 啟動分成兩段：
+   *   boot()        決定「該給誰看什麼」——登入畫面，還是應用本體
+   *   boot.start()  真正把應用組起來（登入成功後由 auth 呼叫）
+   * server 模式下資料在後端，載入是非同步的，所以不能再像 local-only
+   * 版本那樣一路同步跑到底。
+   */
+  var started = false;
+
   function boot() {
-    Z.store.load();
+    // 還沒有資料就得先有主題——不然登入畫面會閃一下白底。
+    Z.store.state = Z.store.emptyState();
     Z.theme.apply();
     Z.theme.watchSystem();
 
     ui.init();
+    if (Z.auth) Z.auth.init();
+
+    if (Z.store.sync.mode === 'server') {
+      Z.auth.fetchMe().then(loadAndStart).catch(function (err) {
+        if (err && err.unauthorized) { Z.auth.showLogin(); return; }
+        fatal(err);
+      });
+    } else {
+      loadAndStart().catch(fatal);
+    }
+  }
+
+  function loadAndStart() {
+    return Z.store.load().then(function () {
+      Z.theme.apply();
+      start();
+    });
+  }
+
+  boot.start = function () { return loadAndStart().catch(fatal); };
+
+  function fatal(err) {
+    var box = document.getElementById('bootError');
+    if (!box) { throw err; }
+    box.classList.add('show');
+    document.getElementById('bootErrorDetail').textContent = String(err && err.message || err);
+  }
+
+  function start() {
+    if (started) { renderAll(); return; }
+    started = true;
 
     topbarEl.dept = document.getElementById('bcDept');
     topbarEl.sep = document.getElementById('bcSep');
@@ -155,7 +196,9 @@
     // 儲存失敗要讓使用者知道，否則會以為資料有存但其實沒有
     if (!Z.store.persist()) {
       ui.toast({
-        text: '無法寫入瀏覽器儲存空間，這次的變更不會被保留。請確認未使用無痕模式。',
+        text: Z.store.sync.mode === 'server'
+          ? '無法寫入瀏覽器儲存空間，離線時的變更將無法暫存。請確認未使用無痕模式。'
+          : '無法寫入瀏覽器儲存空間，這次的變更不會被保留。請確認未使用無痕模式。',
         tone: 'danger', ms: 15000
       });
     }

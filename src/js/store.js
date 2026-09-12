@@ -253,6 +253,9 @@
   /** 目前狀態。模組一律透過 Z.store.state 讀取，不自行保存參照。 */
   store.state = null;
 
+  /** 後端資料版本。local 模式恆為 0。 */
+  store.version = 0;
+
   /** 這次工作階段的暫時性 UI 狀態，不寫入 localStorage。 */
   store.session = {
     filters: { text: '', assigneeId: '', labelId: '', due: '', priority: '', mineOnly: false },
@@ -260,32 +263,250 @@
     searchQuery: ''
   };
 
-  store.load = function () {
-    var raw = null;
+  // ---------- 儲存驅動 ----------
+
+  /*
+     driver 契約：
+       read()          → Promise<{ data, version }>   data 為 null 表示全新使用者
+       persist(state)  → boolean                      同步；true 表示變更已被接受保存
+       flush()         → Promise<{ ok }>              把待送出的變更立刻送出
+
+     這一層是整個系統唯一的 I/O 出入口。抽成 driver 之後，
+     接上後端只影響這個檔案——model、actions 與所有 UI 模組一行都不用改。
+
+     persist() 刻意維持「同步呼叫、立即回傳布林」的簽名。
+     若讓它變成 async，actions.dispatch() 就得跟著 async，
+     然後 38 個 action 的呼叫端全部要改。
+     同步的外觀、非同步的內裡，是讓改動停在這一層的關鍵。
+  */
+
+  var CFG = window.ZYRA_CONFIG || {};
+  var VERSION_KEY = C.STORAGE_KEY + ':version';
+
+  /** 同步狀態。UI 只讀，變更透過 store.onSyncChange 廣播。 */
+  store.sync = { status: 'idle', mode: 'local' };
+
+  /** 由 UI 指派：資料在別處被改過時呼叫，參數為伺服器版本 {version, data}。 */
+  store.onConflict = null;
+  /** 由 UI 指派：session 失效時呼叫。 */
+  store.onUnauthorized = null;
+  /** 由 UI 指派：同步狀態改變時呼叫。 */
+  store.onSyncChange = null;
+
+  function setStatus(s) {
+    if (store.sync.status === s) return;
+    store.sync.status = s;
+    if (store.onSyncChange) store.onSyncChange(store.sync);
+  }
+
+  function readCache() {
     try {
       var s = localStorage.getItem(C.STORAGE_KEY);
-      if (s) raw = JSON.parse(s);
+      return s ? JSON.parse(s) : null;
     } catch (e) {
       // 讀不到或格式壞掉：當作新使用者處理，不要讓整個應用起不來
-      raw = null;
+      return null;
     }
-    store.state = raw ? migrate(raw) : emptyState();
-    return store.state;
-  };
+  }
 
-  store.persist = function () {
+  function writeCache(state, version) {
     try {
-      localStorage.setItem(C.STORAGE_KEY, JSON.stringify(store.state));
+      localStorage.setItem(C.STORAGE_KEY, JSON.stringify(state));
+      if (typeof version === 'number') localStorage.setItem(VERSION_KEY, String(version));
       return true;
     } catch (e) {
       // 配額滿或隱私模式：靜默失敗，但讓呼叫端知道
       return false;
     }
+  }
+
+  function readCacheVersion() {
+    try {
+      return parseInt(localStorage.getItem(VERSION_KEY), 10) || 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  // --- local：資料只在這台瀏覽器 ---
+
+  var localDriver = {
+    name: 'local',
+    read: function () {
+      return Promise.resolve({ data: readCache(), version: 0 });
+    },
+    persist: function (state) {
+      return writeCache(state);
+    },
+    flush: function () {
+      return Promise.resolve({ ok: true });
+    }
+  };
+
+  // --- server：資料在後端，localStorage 降級為離線快取 ---
+
+  var serverDriver = (function () {
+    var base = CFG.apiBase || '';
+    var wait = typeof CFG.syncDebounceMs === 'number' ? CFG.syncDebounceMs : 600;
+    var timer = null;
+    var inFlight = false;
+    var dirty = false;
+    var lastSent = null;   // 上次成功送出的 JSON，用來省掉「沒變也送」的請求
+
+    function api(path, opts) {
+      var o = opts || {};
+      return fetch(base + path, {
+        method: o.method || 'GET',
+        body: o.body,
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    function unauthorized() {
+      setStatus('unauthorized');
+      if (store.onUnauthorized) store.onUnauthorized();
+    }
+
+    function schedule() {
+      dirty = true;
+      setStatus('pending');
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(flush, wait);
+    }
+
+    function flush() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (inFlight) { dirty = true; return Promise.resolve({ ok: false, busy: true }); }
+      if (!dirty) return Promise.resolve({ ok: true });
+
+      var body = JSON.stringify({ version: store.version, data: store.state });
+      dirty = false;
+      inFlight = true;
+      setStatus('syncing');
+
+      return api('/api/state', { method: 'PUT', body: body })
+        .then(function (res) {
+          if (res.status === 401) { unauthorized(); return { ok: false, unauthorized: true }; }
+          if (res.status === 409) {
+            return res.json().then(function (server) {
+              setStatus('conflict');
+              if (store.onConflict) store.onConflict(server);
+              return { ok: false, conflict: true, server: server };
+            });
+          }
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json().then(function (out) {
+            store.version = out.version;
+            lastSent = body;
+            writeCache(store.state, out.version);
+            setStatus('saved');
+            return { ok: true };
+          });
+        })
+        .catch(function () {
+          // 沒送成功就留著，等連線恢復或下一次變更再送
+          dirty = true;
+          setStatus('offline');
+          return { ok: false, offline: true };
+        })
+        .then(function (r) {
+          inFlight = false;
+          if (dirty && !timer) timer = setTimeout(flush, wait);
+          return r;
+        });
+    }
+
+    window.addEventListener('online', function () { if (dirty) flush(); });
+
+    // 還有沒送出的變更就別讓使用者無聲地關掉分頁
+    window.addEventListener('beforeunload', function (e) {
+      if (!dirty && !inFlight) return;
+      e.preventDefault();
+      e.returnValue = '';
+    });
+
+    return {
+      name: 'server',
+      read: function () {
+        return api('/api/state')
+          .then(function (res) {
+            if (res.status === 401) { var err = new Error('unauthorized'); err.unauthorized = true; throw err; }
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          })
+          .then(function (out) {
+            writeCache(out.data, out.version);
+            lastSent = JSON.stringify({ version: out.version, data: out.data });
+            setStatus('saved');
+            return { data: out.data, version: out.version };
+          })
+          .catch(function (err) {
+            if (err && err.unauthorized) throw err;
+            // 連不上後端：先用快取讓人能繼續看、繼續做，版本沿用快取的，
+            // 這樣連線恢復後若伺服器已被別台改過，會正確地撞出 409 而不是覆蓋掉。
+            var cached = readCache();
+            if (!cached) throw err;
+            setStatus('offline');
+            return { data: cached, version: readCacheVersion() };
+          });
+      },
+      persist: function (state) {
+        var ok = writeCache(state);           // 先落地成離線快取
+        var body = JSON.stringify({ version: store.version, data: state });
+        if (body !== lastSent) schedule();
+        return ok;
+      },
+      flush: flush
+    };
+  })();
+
+  function resolveMode() {
+    var m = CFG.mode || 'auto';
+    if (m === 'local' || m === 'server') return m;
+    return location.protocol === 'file:' ? 'local' : 'server';
+  }
+
+  var driver = resolveMode() === 'server' ? serverDriver : localDriver;
+  store.sync.mode = driver.name;
+  store.driver = driver;
+
+  // ---------- 公開 API（簽名與 local-only 版本完全相同） ----------
+
+  store.load = function () {
+    return driver.read().then(function (res) {
+      store.version = res.version || 0;
+      store.state = res.data ? migrate(res.data) : emptyState();
+      return store.state;
+    });
+  };
+
+  store.persist = function () {
+    return driver.persist(store.state);
+  };
+
+  store.flush = function () {
+    return driver.flush();
   };
 
   store.replace = function (next) {
     store.state = next;
     store.persist();
+  };
+
+  /** 衝突時使用者選「以伺服器版本為準」。 */
+  store.adoptServer = function (server) {
+    store.version = server.version;
+    store.state = migrate(server.data);
+    writeCache(store.state, server.version);
+    setStatus('saved');
+  };
+
+  /** 衝突時使用者選「以我這台為準」：接受伺服器版號後重送。 */
+  store.overwriteServer = function (server) {
+    store.version = server.version;
+    store.persist();
+    return store.flush();
   };
 
   store.resetEmpty = function () {

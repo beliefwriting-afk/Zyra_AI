@@ -203,6 +203,16 @@
       panel.appendChild(header);
       panel.appendChild(util.el('div', 'account-popover-divider'));
 
+      // 登入的 Google 帳號是「這份資料屬於誰」的事實來源，
+      // 跟顯示名稱是兩回事，所以獨立一行、不與上面混在一起。
+      var user = Z.auth && Z.auth.user && Z.auth.user();
+      if (user && user.email) {
+        var row = util.el('div', 'account-popover-sub');
+        row.style.margin = '0 0 10px';
+        row.textContent = user.email;
+        panel.appendChild(row);
+      }
+
       var btn = util.el('button', 'btn-secondary', '開啟設定');
       btn.style.width = '100%';
       btn.addEventListener('click', function (e) {
@@ -211,6 +221,18 @@
         Z.settings.open();
       });
       panel.appendChild(btn);
+
+      if (Z.auth && Z.auth.enabled()) {
+        var out = util.el('button', 'btn-text', '登出');
+        out.style.width = '100%';
+        out.style.marginTop = '6px';
+        out.addEventListener('click', function (e) {
+          e.stopPropagation();
+          ui.closeMenu();
+          Z.auth.logout();
+        });
+        panel.appendChild(out);
+      }
     });
   }
 

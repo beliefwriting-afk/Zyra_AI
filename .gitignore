@@ -25,6 +25,12 @@ token.json
 client_secret*.json
 service-account*.json
 
+# ---- 資料庫（使用者資料，絕不進版控）----
+*.db
+*.db-wal
+*.db-shm
+*.sqlite3
+
 # ---- 前端（日後若導入 Node 工具鏈）----
 node_modules/
 

@@ -51,6 +51,7 @@
         <h1 id="bcBoard">Zyra</h1>
       </div>
       <div class="topbar-actions" id="topbarActions">
+        <button class="sync-pill hidden" id="syncPill" aria-live="polite"></button>
         <button class="pill-btn" id="btnGlobalSearch" title="全域搜尋（Ctrl / ⌘ + K）" aria-label="全域搜尋">⌕<span class="label">搜尋</span></button>
         <button class="pill-btn" id="btnColumns" aria-label="看板欄位">≡<span class="label">欄位</span></button>
         <button class="pill-btn" id="btnLibrary" aria-label="範本與標籤庫">🏷<span class="label">標籤庫</span></button>
@@ -72,6 +73,29 @@
 
     <div class="board" id="board"></div>
   </main>
+</div>
+
+<!-- ================= 登入畫面 =================
+     server 模式下未登入時覆蓋整個應用。刻意不放任何功能預覽或試用入口——
+     這是一道存取控制，不是行銷頁。
+-->
+<div class="login-screen" id="loginScreen" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+  <div class="login-card">
+    <div class="login-wordmark" id="loginTitle">Zyra</div>
+    <p class="login-sub">請以獲授權的 Google 帳號登入。</p>
+    <div class="login-btn-slot" id="googleBtn"></div>
+    <div class="login-error hidden" id="loginError" role="alert"></div>
+  </div>
+</div>
+
+<!-- ================= 啟動失敗 ================= -->
+<div class="login-screen" id="bootError" role="alert">
+  <div class="login-card">
+    <div class="login-wordmark">Zyra</div>
+    <p class="login-sub">無法載入資料。伺服器可能暫時無法連線。</p>
+    <div class="login-error" id="bootErrorDetail" style="font-family:var(--font-mono); font-size:11.5px;"></div>
+    <button class="btn-primary" style="margin-top:16px;" onclick="location.reload()">重新載入</button>
+  </div>
 </div>
 
 <!-- 螢幕閱讀器即時播報 -->
@@ -417,6 +441,24 @@
 </div>
 
 
+<!-- ================= 同步衝突 ================= -->
+<div class="modal narrow" id="modalConflict" role="dialog" aria-modal="true" aria-labelledby="conflictTitle" aria-hidden="true">
+  <h2 id="conflictTitle">這份資料在別處被改過</h2>
+  <div class="modal-sub">
+    伺服器上的版本比你這台裝置新——通常是因為你在另一台裝置上也開著 Zyra。
+    請選一邊保留，另一邊會被覆蓋。
+  </div>
+  <div id="conflictBody"></div>
+  <div class="modal-actions" style="justify-content:space-between;">
+    <button class="btn-text" id="conflictClose">稍後再說</button>
+    <span style="display:flex; gap:8px;">
+      <button class="btn-secondary" id="conflictTakeMine">保留這台裝置</button>
+      <button class="btn-primary" id="conflictTakeServer">載入伺服器版本</button>
+    </span>
+  </div>
+</div>
+
+
 <!-- ================= 快捷鍵 ================= -->
 <div class="modal narrow" id="modalShortcuts" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle" aria-hidden="true">
   <h2 id="shortcutsTitle">鍵盤快捷鍵</h2>
@@ -443,6 +485,7 @@
      刻意使用傳統 script 而非 ES module，這樣直接以 file:// 雙擊
      開啟也能運作，不需要架本機伺服器。
 -->
+<script src="src/js/config.js"></script>
 <script src="src/js/constants.js"></script>
 <script src="src/js/util.js"></script>
 <script src="src/js/store.js"></script>
@@ -458,6 +501,7 @@
 <script src="src/js/settings.js"></script>
 <script src="src/js/dialogs.js"></script>
 <script src="src/js/search.js"></script>
+<script src="src/js/auth.js"></script>
 <script src="src/js/app.js"></script>
 
 </body>
