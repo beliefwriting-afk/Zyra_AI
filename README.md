@@ -78,6 +78,7 @@ Zyra_AI/
 ├── index.html              頁面骨架與所有 modal／抽屜的 DOM
 ├── backend/
 │   ├── app.py              Flask 應用：靜態檔 ＋ /api/*
+│   ├── agent.py            AI 助理：Gemini 代理層（不執行任何 action）★
 │   ├── auth.py             Google ID token 驗證、白名單、session
 │   ├── db.py               SQLite 存取（唯一碰資料庫的地方）
 │   ├── config.py           從環境變數讀設定
@@ -107,6 +108,7 @@ Zyra_AI/
 │       ├── dialogs.js      建立部門／看板／欄位
 │       ├── search.js       全域搜尋
 │       ├── auth.js         登入畫面、同步狀態、衝突處理
+│       ├── agent.js        AI 助理：對話、工具迴圈、破壞性確認 ★
 │       └── app.js          初始化、render 協調、快捷鍵
 └── README.md
 ```
@@ -310,6 +312,102 @@ flush()         → Promise       把待送出的變更立刻送出
 
 ---
 
+## AI 助理
+
+使用者用對話請 AI 操作系統。**action 由前端執行**，走 `Zyra.actions.dispatch()`——
+與使用者按按鈕完全同一條路徑。
+
+```
+使用者輸入
+   → POST /api/agent/chat（後端只保管金鑰、轉送給 Gemini）
+   → 模型回 functionCall
+   → 前端 Zyra.actions.dispatch() 執行
+   → 結果接回 contents，再送一輪
+   → 直到模型回文字
+```
+
+**為什麼不在後端執行**：那等於要用 Python 把 38 個 action 重寫一次，
+於是「AI 改的結果跟手動改的不一樣」變成遲早的事——而那正是當初
+設計命令層要避免的。放在前端，復原堆疊、同步、渲染全部免費繼承。
+
+**為什麼後端無狀態**：對話歷史由前端保管，後端每次收到完整的 `contents`。
+不必存 session、不必處理過期，重開一台後端也不影響進行中的對話。
+
+### 工具從 `actions.schema()` 產生，不另寫一份
+
+前端把 schema 送上來，後端只負責轉成 Gemini 的格式。後端若自己維護一份
+工具定義，遲早跟 `actions.js` 不同步——而不同步的工具描述會讓模型用錯參數，
+錯得還很難查。
+
+開放給模型的是 `constants.js` 的 `AI_TOOLS` 白名單（約 16 個），不是全部 38 個：
+工具愈多模型選錯的機率愈高，第一版若品質不好會分不清是「模型不會用」
+還是「工具太多挑花了」。`agent.js` 執行前會再擋一次名單，不靠模型自律。
+
+### 三個唯讀 action 是為模型補的
+
+`listStructure` / `findCards` / `getCard`。使用者用眼睛看畫面就知道有什麼，
+模型沒有眼睛——不給它查詢工具，它只能猜 id，而**猜錯的後果是改到別張卡片，
+且看起來像成功**。
+
+它們走同一個 `dispatch`（帶 `readOnly: true`），所以 `schema()` 會一併描述，
+不必為 AI 另外維護一份查詢介面；`dispatch` 看到 `readOnly` 就跳過復原快照、
+寫入與重繪。
+
+### 破壞性操作要先問過
+
+`destructive: true` 標在 action 定義上，不是在 AI 那層維護一份「危險清單」——
+後者在新增 action 時一定會忘記更新，而忘記的後果是資料被無聲刪掉。
+
+一批呼叫裡只要有任一個是破壞性的，**整批都等使用者按了才做**，不做到一半才停。
+其餘操作直接執行，做完在對話裡給一個「復原」按鈕：使用者不必記得 `Ctrl+Z`，
+也不必回想到底改了幾步。
+
+### 設定
+
+`backend/.env` 的 `ZYRA_GEMINI_API_KEY`（留空則助理停用，其餘功能不受影響）、
+`ZYRA_GEMINI_MODEL`（預設 `gemini-2.5-flash`）。
+
+金鑰只存在後端，瀏覽器永遠拿不到——**純前端保不住金鑰，這是當初非得有
+一層後端不可的原因之一**。
+
+入口是右下角的浮動按鈕（`.ai-fab`），不放進頂欄：頂欄那組在沒有看板時會整個隱藏，
+而「還沒有任何看板」正是最需要助理幫忙開場的時候。它的 `z-index` 刻意低於 `.overlay`，
+開任何面板時會跟著被遮暗，與系統其他元件的層次一致；窄螢幕的 toast 會抬高，避免壓在它上面。
+
+按鈕預設帶 `hidden`，由 `agent.init()` 決定要不要顯示——它在 `.app` 之外，
+登入畫面還蓋著時就已經在 DOM 裡，不先藏起來會在登入頁背後透出一顆圓鈕。
+local 模式沒有後端可談，助理必然不能用，就讓它一直藏著，而不是讓人點了才看到錯誤。
+
+---
+
+## 發佈公開展示版（Artifact）
+
+展示版與正式版共用同一份程式碼，**差別只在 `src/js/config.js` 兩行**：
+
+```js
+mode: 'local',       // 不需要後端、不需要登入
+demoNotice: true,    // 頂欄顯示「展示版」提示
+```
+
+另外 `index.html` 要去掉 `<!doctype>` / `<html>` / `<head>` / `<body>` 外殼——
+Artifact 主機會自己注入一層。
+
+### 在本機驗證展示版時，外殼要補回去
+
+主機注入的外殼裡有 `<meta charset=utf8>`。**拿掉它，`util.js` 會炸**：
+
+```
+Invalid regular expression: /[^\wä¸€-é¾¥-]+/g: Range out of order
+```
+
+`一-龥` 被當成 Latin-1 讀了。原因是 classic `<script src>` 沒有自己的 charset
+時會**繼承文件的編碼**，而本機 `python -m http.server` 送 .js 不帶 charset 參數。
+
+所以本機測試伺服器要服務的是「**包回外殼的版本**」，不是要發佈的那份。
+用剝殼版直接測，失敗的是測試環境，不是程式——這個誤判浪費過一次時間。
+
+---
+
 ## 部署到 VM
 
 ```bash
@@ -359,14 +457,14 @@ sqlite3 /var/lib/zyra/zyra.db ".backup /backup/zyra-$(date +%F).db"
 
 ---
 
-## 第二階段：AI 導入
+## 第二階段：AI 導入（第一版已完成）
 
-目標是讓使用者在系統內直接與 AI 對話，由 AI 操作整個系統。所需的地基已經備好：
+第一版已上線，見上方「AI 助理」。當初備好的地基全部派上用場：
 
 - `Zyra.actions.schema()` → 產生 function-calling 的工具定義
 - `Zyra.actions.dispatch(name, params)` → AI 的執行入口，與 UI 完全同一條路徑
 - `Zyra.model.snapshot()` → 系統現況的精簡結構化描述，作為餵給模型的上下文
 - 復原堆疊 → AI 的每一個動作使用者都能一鍵撤回
 
-模型供應商與金鑰保管方式尚待決定，但**後端這一層已經存在了**——
-API key 放在 `backend/.env`、由 Flask 代理呼叫模型，是現成的路。
+接下來可以往這幾個方向長：放寬 `AI_TOOLS` 白名單、讓助理能建立標籤與範本、
+串流回應（目前是一次回完）、以及把對話紀錄存進後端。
