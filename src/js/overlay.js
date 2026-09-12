@@ -83,6 +83,15 @@
     if (!el) return;
     closeMenu();
 
+    // 同一個面板元素已在堆疊裡就不重複推入——否則要按兩次 Esc 才關得掉，
+    // 而且遮罩會留在畫面上擋住一切（例如卡片工作區裡「複製卡片」後又開同一個 modal）。
+    var already = panels.some(function (p) { return p.el === el; });
+    if (already) {
+      el.classList.add('show');
+      requestAnimationFrame(function () { focusFirst(el); });
+      return;
+    }
+
     panels.push({
       el: el,
       restoreFocusTo: document.activeElement,
@@ -141,6 +150,40 @@
   }
 
   ui.closeMenu = closeMenu;
+
+  /**
+   * 直接開一個浮層並把內容交給 build 畫。
+   * 與 openMenu 的差別：openMenu 一定要先有一列可點的項目，
+   * 若內容本身就是要看的東西，那一層就只是多按一次的門檻。
+   */
+  ui.openPopover = function (anchorBtn, className, build) {
+    closeMenu();
+    menuAnchor = anchorBtn;
+    var rect = anchorBtn.getBoundingClientRect();
+    var panel = util.el('div', 'kebab-menu ' + (className || ''));
+    document.body.appendChild(panel);
+    menuEl = panel;
+
+    function reposition() {
+      var mh = panel.offsetHeight, mw = panel.offsetWidth;
+      var top = rect.top - mh - 8;
+      if (top < 8) top = Math.min(rect.bottom + 8, window.innerHeight - mh - 8);
+      if (top < 8) top = 8;
+      var left = rect.left;
+      if (left + mw > window.innerWidth - 8) left = Math.max(8, window.innerWidth - mw - 8);
+      panel.style.top = top + 'px';
+      panel.style.left = left + 'px';
+    }
+
+    build(panel, reposition, closeMenu);
+    reposition();
+    setTimeout(function () { document.addEventListener('click', onDocClick, true); }, 0);
+  };
+
+  ui.togglePopover = function (anchorBtn, className, build) {
+    if (menuEl && menuAnchor === anchorBtn) { closeMenu(); return; }
+    ui.openPopover(anchorBtn, className, build);
+  };
 
   ui.toggleMenu = function (anchorBtn, actions) {
     if (menuEl && menuAnchor === anchorBtn) { closeMenu(); return; }

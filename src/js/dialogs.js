@@ -9,16 +9,24 @@
   var dialogs = {};
 
   var nb = { deptId: null, columns: [] };
+  var nd = { boards: [] };
   var colBoardId = null;
 
   dialogs.init = function () {
     // --- 建立部門 ---
     document.getElementById('ndCancel').addEventListener('click', function () { ui.closeTop(); });
     document.getElementById('ndSubmit').addEventListener('click', submitDept);
-    ['ndName', 'ndBoardName'].forEach(function (id) {
-      document.getElementById(id).addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); submitDept(); }
-      });
+    document.getElementById('ndName').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); submitDept(); }
+    });
+    document.getElementById('ndAddBoardInput').addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      var v = e.target.value.trim();
+      if (!v) return;
+      nd.boards.push({ id: util.uid('tmp'), name: v });
+      e.target.value = '';
+      renderNdBoards();
     });
 
     // --- 建立看板 ---
@@ -67,17 +75,45 @@
 
   dialogs.newDepartment = function () {
     document.getElementById('ndName').value = '';
-    document.getElementById('ndBoardName').value = '看板';
+    document.getElementById('ndAddBoardInput').value = '';
     document.getElementById('ndError').classList.add('hidden');
+    nd = { boards: [{ id: util.uid('tmp'), name: '看板' }] };
+    renderNdBoards();
     ui.open('modalNewDept');
   };
 
+  /** 部門底下要一併建立的看板清單 */
+  function renderNdBoards() {
+    var wrap = document.getElementById('ndBoards');
+    wrap.innerHTML = '';
+    if (!nd.boards.length) {
+      wrap.appendChild(util.el('span', 'settings-hint', '尚未指定看板，建立後會自動放一個「看板」。'));
+      return;
+    }
+    nd.boards.forEach(function (bd) {
+      var chip = util.el('span', 'chip-editable');
+      chip.appendChild(util.el('span', '', bd.name));
+      var rm = util.el('button', '', '×');
+      rm.setAttribute('aria-label', '移除看板 ' + bd.name);
+      rm.addEventListener('click', function () {
+        nd.boards = nd.boards.filter(function (x) { return x.id !== bd.id; });
+        renderNdBoards();
+      });
+      chip.appendChild(rm);
+      wrap.appendChild(chip);
+    });
+  }
+
   function submitDept() {
     var name = document.getElementById('ndName').value.trim();
-    var boardName = document.getElementById('ndBoardName').value.trim();
     var err = document.getElementById('ndError');
 
-    var res = A.dispatch('createDepartment', { name: name, boardName: boardName },
+    // 允許使用者把最後一個名稱留在輸入框沒按 Enter 就直接建立
+    var pending = document.getElementById('ndAddBoardInput').value.trim();
+    var names = nd.boards.map(function (b) { return b.name; });
+    if (pending) names.push(pending);
+
+    var res = A.dispatch('createDepartment', { name: name, boardNames: names },
       { skipRender: true, silent: true });
     if (!res.ok) {
       err.textContent = res.error;

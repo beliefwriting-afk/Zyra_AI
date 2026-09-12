@@ -28,7 +28,45 @@
       e.stopPropagation();
       openAccountMenu();
     });
+
+    // --- 窄螢幕：側邊欄改為覆蓋式抽屜 ---
+    document.getElementById('btnNav').addEventListener('click', function (e) {
+      e.stopPropagation();
+      sidebar.toggleNav();
+    });
+    document.getElementById('navBackdrop').addEventListener('click', sidebar.closeNav);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && document.body.classList.contains('nav-open')) {
+        e.stopPropagation();
+        sidebar.closeNav();
+      }
+    }, true);
   };
+
+  /** 是否處於窄螢幕（與 layout.css 的斷點一致） */
+  sidebar.isNarrow = function () {
+    return window.matchMedia && window.matchMedia('(max-width: 860px)').matches;
+  };
+
+  sidebar.openNav = function () {
+    document.body.classList.add('nav-open');
+    var first = el.deptScroll.querySelector('button');
+    if (first) first.focus();
+  };
+
+  sidebar.closeNav = function () {
+    document.body.classList.remove('nav-open');
+  };
+
+  sidebar.toggleNav = function () {
+    if (document.body.classList.contains('nav-open')) sidebar.closeNav();
+    else sidebar.openNav();
+  };
+
+  /** 窄螢幕上選完看板就把抽屜收起來，否則會擋住剛選的內容 */
+  function afterNavigate() {
+    if (sidebar.isNarrow()) sidebar.closeNav();
+  }
 
   sidebar.render = function () {
     var s = Z.store.state;
@@ -109,6 +147,7 @@
       if (isActive) main.setAttribute('aria-current', 'true');
       main.addEventListener('click', function () {
         A.dispatch('setActiveBoard', { boardId: b.id });
+        afterNavigate();
       });
 
       var count = util.el('span', 'board-count', String(M.boardCardCount(b.id)));
@@ -151,33 +190,28 @@
   function openAccountMenu() {
     var s = Z.store.state;
     var me = M.currentMember();
-    ui.toggleMenu(el.accountAvatar, [
-      {
-        label: '帳號資訊',
-        custom: function (menu) {
-          menu.innerHTML = '';
-          menu.classList.add('account-popover');
 
-          var header = util.el('div', 'account-popover-header');
-          header.innerHTML =
-            '<span class="account-popover-avatar">' + util.escapeHtml(util.initial(s.accountName, '使')) + '</span>' +
-            '<span><div class="account-popover-name">' + util.escapeHtml(s.accountName) + '</div>' +
-            '<div class="account-popover-sub">' + util.escapeHtml(s.companyName) +
-            (me ? ' · ' + util.escapeHtml(me.name) : '') + '</div></span>';
-          menu.appendChild(header);
-          menu.appendChild(util.el('div', 'account-popover-divider'));
+    // 直接顯示內容。舊版先跳一列「帳號資訊」要再點一次才看得到，
+    // 中間那層沒有承載任何選擇，純粹是多一次點擊。
+    ui.togglePopover(el.accountAvatar, 'account-popover', function (panel) {
+      var header = util.el('div', 'account-popover-header');
+      header.innerHTML =
+        '<span class="account-popover-avatar">' + util.escapeHtml(util.initial(s.accountName, '使')) + '</span>' +
+        '<span><div class="account-popover-name">' + util.escapeHtml(s.accountName) + '</div>' +
+        '<div class="account-popover-sub">' + util.escapeHtml(s.companyName) +
+        (me ? ' · ' + util.escapeHtml(me.name) : ' · 尚未指定成員') + '</div></span>';
+      panel.appendChild(header);
+      panel.appendChild(util.el('div', 'account-popover-divider'));
 
-          var btn = util.el('button', 'btn-secondary', '開啟設定');
-          btn.style.width = '100%';
-          btn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            ui.closeMenu();
-            Z.settings.open();
-          });
-          menu.appendChild(btn);
-        }
-      }
-    ]);
+      var btn = util.el('button', 'btn-secondary', '開啟設定');
+      btn.style.width = '100%';
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        ui.closeMenu();
+        Z.settings.open();
+      });
+      panel.appendChild(btn);
+    });
   }
 
   Z.sidebar = sidebar;

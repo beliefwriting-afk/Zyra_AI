@@ -13,9 +13,12 @@
 
   var el = {};
   var resetConfirming = false;
+  /** 目前分頁。跨次開啟保留，改完外觀再開還在原地。 */
+  var activeTab = 'appearance';
 
   settings.init = function () {
     el.modal = document.getElementById('modalSettings');
+    el.tabs = document.getElementById('settingsTabs');
     el.themeRow = document.getElementById('themeModeRow');
     el.swatches = document.getElementById('accentSwatches');
     el.showLabels = document.getElementById('toggleShowLabels');
@@ -30,7 +33,8 @@
     el.newDeptExpanded = document.getElementById('toggleNewDeptExpanded');
     el.dataRow = document.getElementById('dataRow');
 
-    document.getElementById('btnSettings').addEventListener('click', settings.open);
+    // 包一層：直接掛 settings.open 會把事件物件當成 tab 參數傳進去
+    document.getElementById('btnSettings').addEventListener('click', function () { settings.open(); });
     document.getElementById('settingsClose').addEventListener('click', function () { ui.closeTop(); });
 
     el.accountName.addEventListener('change', function () {
@@ -74,14 +78,37 @@
     document.getElementById('importClose').addEventListener('click', function () { ui.closeTop(); });
   };
 
-  settings.open = function () {
+  settings.open = function (tab) {
     resetConfirming = false;
+    if (tab) activeTab = tab;
     settings.render();
     ui.open(el.modal);
   };
 
+  /**
+   * 切換分頁。舊版把外觀、帳號、成員、偏好、資料全部堆在一個長捲動裡，
+   * 結果最重要的「匯出備份」被推到最底下——那是資料只存在瀏覽器時
+   * 唯一的保命功能，不該要捲三次才看得到。
+   */
+  function selectTab(id) {
+    activeTab = id;
+    Array.prototype.forEach.call(el.tabs.querySelectorAll('.tab-btn'), function (b) {
+      var on = b.dataset.tab === id;
+      b.classList.toggle('selected', on);
+      b.setAttribute('aria-selected', String(on));
+    });
+    Array.prototype.forEach.call(el.modal.querySelectorAll('.tab-panel'), function (p) {
+      p.classList.toggle('selected', p.dataset.tab === id);
+    });
+  }
+
   settings.render = function () {
     var s = Z.store.state;
+
+    Array.prototype.forEach.call(el.tabs.querySelectorAll('.tab-btn'), function (b) {
+      b.onclick = function () { selectTab(b.dataset.tab); };
+    });
+    selectTab(activeTab);
 
     // 主題
     Array.prototype.forEach.call(el.themeRow.querySelectorAll('.seg-btn'), function (btn) {

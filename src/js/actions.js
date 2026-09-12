@@ -39,6 +39,7 @@
     if (!entry) return { ok: false, error: '沒有可復原的操作' };
     Z.store.replace(entry.snapshot);
     Z.render();
+    if (Z.render.panels) Z.render.panels();
     return { ok: true, message: '已復原：' + entry.label };
   };
 
@@ -122,17 +123,31 @@
       label: '建立部門',
       params: {
         name: { type: 'string', required: true, desc: '部門名稱' },
-        boardName: { type: 'string', required: false, desc: '預設看板名稱，省略則用「看板」' }
+        boardNames: { type: 'string[]', required: false, desc: '要一併建立的看板名稱陣列，省略則建一個「看板」' },
+        boardName: { type: 'string', required: false, desc: '（相容舊用法）單一看板名稱' }
       },
       run: function (p) {
         var name = trimmed(p.name);
         if (!name) return { ok: false, error: '請輸入部門名稱' };
+
+        var names = [];
+        if (p.boardNames && p.boardNames.length) {
+          names = p.boardNames.map(function (n) { return trimmed(n); }).filter(Boolean);
+        } else if (trimmed(p.boardName)) {
+          names = [trimmed(p.boardName)];
+        }
+        if (!names.length) names = ['看板'];
+
         var cols = C.BOARD_TEMPLATES[S().defaultBoardTemplate] || C.BOARD_TEMPLATES.basic;
-        var board = Z.store.make.board(trimmed(p.boardName, '看板'), cols);
-        var dept = Z.store.make.dept(name, S().newDeptExpanded, [board], [], []);
+        var boards = names.map(function (n) { return Z.store.make.board(n, cols); });
+        var dept = Z.store.make.dept(name, S().newDeptExpanded, boards, [], []);
         S().departments.push(dept);
-        S().activeBoardId = board.id;
-        return { ok: true, data: { deptId: dept.id, boardId: board.id }, message: '已建立部門「' + name + '」' };
+        S().activeBoardId = boards[0].id;
+        return {
+          ok: true,
+          data: { deptId: dept.id, boardId: boards[0].id, boardIds: boards.map(function (b) { return b.id; }) },
+          message: '已建立部門「' + name + '」與 ' + boards.length + ' 個看板'
+        };
       }
     },
 
@@ -433,6 +448,104 @@
           }
         }
         s.cards.push(card);
+        return { ok: true };
+      }
+    },
+
+    /** 複製卡片。重複性的工作不該每次重打。 */
+    duplicateCard: {
+      label: '複製卡片',
+      params: { cardId: { type: 'string', required: true, desc: '要複製的卡片 id' } },
+      run: function (p) {
+        var src = M.getCard(p.cardId);
+        if (!src) return { ok: false, error: '找不到卡片' };
+        var copy = Z.store.make.card(src.boardId, src.columnId, {
+          title: src.title + '（複本）',
+          description: src.description,
+          assigneeId: src.assigneeId,
+          dueDate: src.dueDate,
+          priority: src.priority,
+          labelIds: src.labelIds,
+          // 子任務一併複製，但勾選狀態歸零——複本是要重新做一次
+          checklist: src.checklist.map(function (it) {
+            return { id: util.uid('ck'), text: it.text, done: false };
+          })
+        });
+        var at = S().cards.findIndex(function (c) { return c.id === src.id; });
+        S().cards.splice(at + 1, 0, copy);
+        return { ok: true, data: { cardId: copy.id }, message: '已複製「' + src.title + '」' };
+      }
+    },
+
+    // ===== 檢查清單 =====
+
+    addChecklistItem: {
+      label: '新增子任務',
+      params: {
+        cardId: { type: 'string', required: true, desc: '卡片 id' },
+        text: { type: 'string', required: true, desc: '子任務內容' }
+      },
+      run: function (p) {
+        var card = M.getCard(p.cardId);
+        if (!card) return { ok: false, error: '找不到卡片' };
+        var text = trimmed(p.text);
+        if (!text) return { ok: false, error: '請輸入子任務內容' };
+        var item = Z.store.make.checklistItem(text);
+        card.checklist.push(item);
+        touch(card);
+        return { ok: true, data: { itemId: item.id } };
+      }
+    },
+
+    toggleChecklistItem: {
+      label: '勾選子任務',
+      params: {
+        cardId: { type: 'string', required: true, desc: '卡片 id' },
+        itemId: { type: 'string', required: true, desc: '子任務 id' },
+        done: { type: 'boolean', required: false, desc: '指定狀態，省略則切換' }
+      },
+      run: function (p) {
+        var card = M.getCard(p.cardId);
+        if (!card) return { ok: false, error: '找不到卡片' };
+        var item = card.checklist.find(function (i) { return i.id === p.itemId; });
+        if (!item) return { ok: false, error: '找不到子任務' };
+        item.done = p.done === undefined ? !item.done : !!p.done;
+        touch(card);
+        return { ok: true };
+      }
+    },
+
+    updateChecklistItem: {
+      label: '編輯子任務',
+      params: {
+        cardId: { type: 'string', required: true, desc: '卡片 id' },
+        itemId: { type: 'string', required: true, desc: '子任務 id' },
+        text: { type: 'string', required: true, desc: '新內容' }
+      },
+      run: function (p) {
+        var card = M.getCard(p.cardId);
+        if (!card) return { ok: false, error: '找不到卡片' };
+        var item = card.checklist.find(function (i) { return i.id === p.itemId; });
+        if (!item) return { ok: false, error: '找不到子任務' };
+        var text = trimmed(p.text);
+        if (!text) return { ok: false, error: '內容不可為空' };
+        item.text = text;
+        touch(card);
+        return { ok: true };
+      }
+    },
+
+    deleteChecklistItem: {
+      label: '刪除子任務',
+      params: {
+        cardId: { type: 'string', required: true, desc: '卡片 id' },
+        itemId: { type: 'string', required: true, desc: '子任務 id' }
+      },
+      run: function (p) {
+        var card = M.getCard(p.cardId);
+        if (!card) return { ok: false, error: '找不到卡片' };
+        card.checklist = card.checklist.filter(function (i) { return i.id !== p.itemId; });
+        touch(card);
         return { ok: true };
       }
     },

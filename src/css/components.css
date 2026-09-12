@@ -84,9 +84,9 @@
 
 .card{
   position:relative; background:var(--surface); border:1px solid var(--border);
-  border-radius:var(--r-md); padding:10px 11px 10px 13px;
-  display:flex; flex-direction:column; gap:7px;
-  cursor:grab; text-align:left; width:100%;
+  border-radius:var(--r-md); padding:9px 10px;
+  display:flex; flex-direction:column; gap:6px;
+  cursor:grab; text-align:left; width:100%; min-width:0; max-width:100%;
 }
 .card:hover{border-color:var(--border-strong); box-shadow:var(--shadow-lift);}
 .card:focus-visible{outline:2px solid var(--accent); outline-offset:1px;}
@@ -95,20 +95,24 @@
 .card.drop-after{box-shadow:0 3px 0 0 var(--accent);}
 .card.is-selected{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
 
-/* 左側優先級色條 */
-.card::before{
-  content:''; position:absolute; left:0; top:8px; bottom:8px; width:3px;
-  border-radius:0 3px 3px 0; background:transparent;
-}
-.card[data-priority="urgent"]::before{background:var(--pri-urgent);}
-.card[data-priority="high"]::before{background:var(--pri-high);}
-.card[data-priority="low"]::before{background:var(--pri-low);}
-
-.card-title{font-size:13.5px; font-weight:500; line-height:1.45; color:var(--ink); word-break:break-word;}
+.card-title{font-size:13.5px; font-weight:500; line-height:1.45; color:var(--ink); overflow-wrap:anywhere;}
 .card-title mark{background:var(--warn-soft); color:inherit; border-radius:2px; padding:0 1px;}
 
-.card-meta{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:11px; color:var(--ink-faint);}
+/*
+  優先級用具名 chip，而不是沒有圖例的色條——色條好看但沒人知道紅色代表什麼。
+  只有「緊急」與「高」會顯示；一般與低不佔視覺，降低噪音。
+*/
+.pri-chip{
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:10px; font-weight:700; letter-spacing:.02em;
+  padding:2px 7px; border-radius:999px; white-space:nowrap;
+}
+.pri-chip[data-pri="urgent"]{background:var(--danger-soft); color:var(--pri-urgent);}
+.pri-chip[data-pri="high"]{background:var(--warn-soft); color:var(--pri-high);}
+
+.card-meta{display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:11px; color:var(--ink-faint);}
 .card-meta-item{display:inline-flex; align-items:center; gap:4px; white-space:nowrap;}
+.card-meta .spacer{flex:1;}
 
 .due-chip{
   display:inline-flex; align-items:center; gap:4px;
@@ -122,22 +126,73 @@
 
 .desc-dot{font-size:12px; line-height:1; color:var(--ink-faint);}
 
-.chip-row{display:flex; flex-wrap:wrap; gap:5px;}
+.chip-row{display:flex; flex-wrap:wrap; gap:5px; min-width:0;}
+/*
+  text-overflow:ellipsis 對 flex 容器的直屬文字無效——chip 是 inline-flex，
+  文字若直接放在裡面會被硬切斷、沒有省略號，長標籤看起來就像壞掉。
+  所以文字一律包一層 .txt 由它負責截斷。
+*/
 .label-chip{
-  display:inline-flex; align-items:center; gap:5px;
+  display:inline-flex; align-items:center; gap:5px; min-width:0;
   font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:999px;
-  max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  max-width:100%; white-space:nowrap;
 }
-.label-chip button{background:none; border:none; color:inherit; cursor:pointer; font-weight:700; padding:0 0 0 2px; line-height:1;}
+.label-chip .txt{
+  min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.label-chip button{background:none; border:none; color:inherit; cursor:pointer; font-weight:700; padding:0 0 0 2px; line-height:1; flex:0 0 auto;}
+.label-chip .caret{flex:0 0 auto;}
 
 /* 精簡密度 */
-.compact-cards .column{padding:9px;}
-.compact-cards .card-stack{gap:5px;}
-.compact-cards .card{padding:7px 9px 7px 11px; gap:4px;}
+.compact-cards .column{padding:8px;}
+.compact-cards .card-stack{gap:4px;}
+.compact-cards .card{padding:6px 9px; gap:4px;}
 .compact-cards .card-title{font-size:12.5px; line-height:1.35;}
 .compact-cards .chip-row{gap:4px;}
 .compact-cards .label-chip{font-size:9.5px; padding:1px 6px;}
-.compact-cards .card-meta{font-size:10px; gap:6px;}
+.compact-cards .card-meta{font-size:10px; gap:5px;}
+.compact-cards .avatar-xs{width:16px; height:16px; flex-basis:16px; font-size:8.5px;}
+
+/* ---------- 篩選 chip ---------- */
+
+.filter-chip{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:5px 6px 5px 11px; border-radius:999px;
+  border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent);
+  font-size:12px; font-weight:600; white-space:nowrap; max-width:220px;
+}
+.filter-chip .txt{overflow:hidden; text-overflow:ellipsis;}
+.filter-chip button{
+  background:none; border:none; color:inherit; cursor:pointer;
+  font-size:13px; line-height:1; padding:0 3px; opacity:.75;
+}
+.filter-chip button:hover{opacity:1;}
+
+.filter-add{
+  padding:6px 11px; border-radius:999px;
+  border:1px dashed var(--border-strong); background:transparent;
+  color:var(--ink-soft); font-size:12.5px; font-weight:500; white-space:nowrap;
+}
+.filter-add:hover{border-color:var(--accent); color:var(--accent); border-style:solid;}
+
+.filter-menu-group{padding:4px 10px 2px; font-size:10.5px; font-weight:700; color:var(--ink-faint); letter-spacing:.04em;}
+.kebab-menu button.is-picked{color:var(--accent); font-weight:600;}
+
+/* ---------- 分頁（設定） ---------- */
+
+.tabs{
+  display:flex; gap:2px; margin:0 0 18px;
+  border-bottom:1px solid var(--border); overflow-x:auto;
+}
+.tab-btn{
+  padding:8px 13px; border:none; background:none; color:var(--ink-soft);
+  font-size:13px; font-weight:500; white-space:nowrap;
+  border-bottom:2px solid transparent; margin-bottom:-1px;
+}
+.tab-btn:hover{color:var(--ink);}
+.tab-btn.selected{color:var(--accent); font-weight:700; border-bottom-color:var(--accent);}
+.tab-panel{display:none;}
+.tab-panel.selected{display:block;}
 
 /* ---------- 空狀態提示 ---------- */
 
@@ -177,11 +232,18 @@
 .drawer.show{transform:translateX(0);}
 .drawer h2{font-size:15.5px; font-weight:700; margin-bottom:3px;}
 .drawer-sub{font-size:11.5px; color:var(--ink-faint); font-family:var(--font-mono); margin-bottom:16px;}
+/*
+  中文沒有大小寫，text-transform:uppercase 對中文完全無效，
+  只會留下一排又小又淡的灰字、讀起來像雜訊而不像結構。
+  改用稍大的字級與較深的色階來建立層次。
+*/
 .drawer-section-title{
-  font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
-  color:var(--ink-faint); margin:20px 0 8px;
+  font-size:12.5px; font-weight:700; letter-spacing:.01em;
+  color:var(--ink-soft); margin:22px 0 10px;
+  padding-bottom:6px; border-bottom:1px solid var(--border);
   display:flex; align-items:center; justify-content:space-between; gap:8px;
 }
+.drawer-section-title:first-child{margin-top:0;}
 
 /* ---------- 浮動選單 ---------- */
 
@@ -379,3 +441,204 @@ kbd{
   border:1px solid var(--border-strong); border-bottom-width:2px; border-radius:5px;
   padding:2px 6px; color:var(--ink); white-space:nowrap;
 }
+
+/* ============================================================
+   卡片工作區
+   點開卡片後是「可以在裡面做事」的地方，不是一張待填表單。
+   每個區塊點一下就地編輯、立即生效，沒有儲存／取消。
+   ============================================================ */
+
+.modal.card-detail{width:min(620px,94vw); padding:20px 22px 24px;}
+
+.cd-head{display:flex; align-items:flex-start; gap:8px; margin-bottom:10px;}
+.cd-path{
+  flex:1; min-width:0; font-size:11.5px; color:var(--ink-faint);
+  font-family:var(--font-mono); padding-top:5px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+
+.cd-title{
+  font-size:20px; font-weight:700; line-height:1.4; color:var(--ink);
+  margin:0 0 14px; padding:4px 8px; border-radius:var(--r-md);
+  cursor:text; word-break:break-word; border:1px solid transparent;
+}
+.cd-title:hover{background:var(--surface-sunken);}
+.cd-title-input{
+  width:100%; font:inherit; color:inherit;
+  border:1px solid var(--accent); border-radius:var(--r-sm);
+  background:var(--paper); padding:2px 6px;
+}
+.cd-title-input:focus{outline:none;}
+
+/* 屬性列 */
+.cd-props{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:8px 16px; margin-bottom:20px;
+  padding:12px; border-radius:var(--r-md); background:var(--surface-sunken);
+}
+.cd-prop{display:flex; align-items:center; gap:8px; min-width:0;}
+.cd-prop-label{
+  font-size:11px; font-weight:600; color:var(--ink-faint);
+  flex:0 0 44px; white-space:nowrap;
+}
+.cd-prop-value{
+  flex:1; min-width:0; display:flex; align-items:center; gap:6px;
+  padding:5px 9px; border-radius:var(--r-sm); border:1px solid transparent;
+  background:var(--surface); color:var(--ink); font-size:12.5px; text-align:left;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.cd-prop-value:hover{border-color:var(--accent); color:var(--accent);}
+.cd-prop-value[data-tone="danger"]{color:var(--danger); font-weight:600;}
+.cd-prop-value[data-tone="warn"]{color:var(--warn); font-weight:600;}
+
+/* 區塊 */
+.cd-section{margin-bottom:20px;}
+.cd-section-head{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+.cd-section-head h3{
+  font-size:12.5px; font-weight:700; color:var(--ink-soft);
+  letter-spacing:.01em; margin:0;
+}
+.cd-count{font-family:var(--font-mono); font-size:11px; color:var(--ink-faint);}
+.cd-section-head .add-row-btn{margin-left:auto;}
+
+/* 描述 */
+.cd-desc{
+  font-size:13.5px; line-height:1.75; color:var(--ink);
+  padding:10px 11px; border-radius:var(--r-md);
+  background:var(--surface-sunken); cursor:text; min-height:44px;
+  word-break:break-word;
+}
+.cd-desc:hover{background:var(--surface-raised); box-shadow:inset 0 0 0 1px var(--border);}
+.cd-desc.is-empty{color:var(--ink-faint); font-size:13px;}
+.cd-desc-input{
+  width:100%; min-height:110px; resize:vertical;
+  font-family:inherit; font-size:13.5px; line-height:1.75; color:var(--ink);
+  border:1px solid var(--border-strong); border-radius:7px;
+  background:var(--paper); padding:9px 10px;
+}
+.cd-inline-actions{display:flex; gap:8px; align-items:center; margin-top:8px;}
+
+/* 檢查清單 */
+.ck-bar{
+  height:5px; border-radius:999px; background:var(--surface-sunken);
+  overflow:hidden; margin-bottom:10px;
+}
+.ck-bar-fill{
+  height:100%; background:var(--accent); border-radius:999px;
+  transition:width .2s ease;
+}
+.ck-bar-fill[data-full="1"]{background:var(--ok);}
+
+.ck-row{
+  display:flex; align-items:center; gap:9px;
+  padding:5px 6px; border-radius:var(--r-sm);
+}
+.ck-row:hover{background:var(--surface-sunken);}
+.ck-row input[type="checkbox"]{
+  width:16px; height:16px; flex:0 0 16px; accent-color:var(--accent); cursor:pointer;
+}
+.ck-row input[type="text"]{
+  flex:1; min-width:0; font-size:13px; color:var(--ink);
+  border:1px solid var(--accent); border-radius:var(--r-sm);
+  background:var(--paper); padding:3px 7px;
+}
+.ck-row input[type="text"]:focus{outline:none;}
+.ck-text{flex:1; min-width:0; font-size:13px; color:var(--ink); cursor:text; word-break:break-word;}
+.ck-row.is-done .ck-text{color:var(--ink-faint); text-decoration:line-through;}
+.ck-remove{
+  background:none; border:none; color:var(--ink-faint); font-size:15px;
+  line-height:1; padding:2px 5px; border-radius:var(--r-sm); opacity:0;
+}
+.ck-row:hover .ck-remove,
+.ck-remove:focus-visible{opacity:1;}
+.ck-remove:hover{color:var(--danger);}
+
+.ck-add{padding:4px 6px 0;}
+.ck-add input{
+  width:100%; font-size:13px; color:var(--ink);
+  border:1px dashed var(--border-strong); border-radius:var(--r-sm);
+  background:transparent; padding:7px 9px;
+}
+.ck-add input:focus{outline:none; border-style:solid; border-color:var(--accent);}
+
+/* 卡片上的進度小標 */
+.ck-mini{font-family:var(--font-mono); font-size:10.5px;}
+.ck-mini[data-full="1"]{color:var(--ok); font-weight:700;}
+
+/* 活動 */
+.cd-activity-row{
+  display:flex; align-items:center; gap:10px;
+  font-size:12px; color:var(--ink-soft); padding:4px 2px;
+}
+
+@media (max-width:860px){
+  .modal.card-detail{padding:16px 16px 20px;}
+  .cd-title{font-size:18px;}
+  .cd-props{grid-template-columns:1fr; padding:10px;}
+}
+
+/* ---------- 卡片上的標籤詳情（可收合） ----------
+   標籤不是色塊，是「範本 ＋ 填好的值」。那份結構化資料原本只有
+   hover tooltip 看得到，等於做了功能卻沒露出價值——這裡讓它可以展開。 */
+
+.cd-label-row{display:flex; flex-direction:column; gap:0; margin-bottom:6px;}
+.cd-label-head{display:flex; align-items:center; gap:6px;}
+
+.label-chip.is-expandable{cursor:pointer; border:1px solid transparent;}
+.label-chip.is-expandable:hover{filter:brightness(.97);}
+.label-chip .caret{
+  font-size:8px; line-height:1; opacity:.7;
+  transition:transform .15s ease; display:inline-block;
+}
+.label-chip.is-open .caret{transform:rotate(90deg);}
+
+.label-detail{
+  margin:7px 0 4px 4px; padding:11px 13px;
+  border-left:2px solid var(--border-strong); border-radius:0 var(--r-md) var(--r-md) 0;
+  background:var(--surface-sunken);
+}
+.label-detail-title{
+  font-size:11px; font-weight:700; color:var(--ink-faint);
+  font-family:var(--font-mono); margin-bottom:8px;
+  display:flex; align-items:center; gap:8px;
+}
+.label-detail-title .add-row-btn{margin-left:auto;}
+.label-detail-row{
+  display:grid; grid-template-columns:88px 1fr; gap:4px 12px;
+  font-size:12.5px; padding:3px 0; align-items:baseline;
+}
+.label-detail-row dt{color:var(--ink-faint); font-size:11.5px; white-space:nowrap;}
+.label-detail-row dd{margin:0; color:var(--ink); word-break:break-word;}
+.label-detail-row dd.is-empty{color:var(--ink-faint);}
+.label-detail-note{
+  font-size:11px; color:var(--ink-faint); line-height:1.6;
+  margin-top:9px; padding-top:8px; border-top:1px solid var(--border);
+}
+
+@media (max-width:520px){
+  .label-detail-row{grid-template-columns:1fr; gap:0;}
+  .label-detail-row dt{margin-top:4px;}
+}
+
+/* ---------- 標籤庫／範本的清單列 ----------
+   抽屜只列「有哪些」，點進第二層看內容——範本的欄位編輯器整組攤在
+   抽屜裡會佔滿版面，而標籤只顯示名字則是建好就看不到內容。 */
+
+.lib-row{
+  display:flex; align-items:center; gap:9px; width:100%;
+  padding:10px 11px; margin-bottom:6px;
+  border:1px solid var(--border); border-radius:var(--r-md);
+  background:var(--surface); text-align:left; color:var(--ink);
+}
+.lib-row:hover{border-color:var(--accent); background:var(--surface-sunken);}
+.lib-row-text{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
+.lib-row-primary{
+  font-size:13px; font-weight:600; color:var(--ink);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.lib-row-caption{
+  font-size:11px; color:var(--ink-faint); font-family:var(--font-mono);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.lib-row-go{color:var(--ink-faint); font-size:15px; flex:0 0 auto;}
+.lib-row:hover .lib-row-go{color:var(--accent);}

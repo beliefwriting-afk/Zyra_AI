@@ -44,15 +44,16 @@
   <!-- ================= 主區 ================= -->
   <main class="main">
     <header class="topbar">
+      <button class="btn-nav" id="btnNav" aria-label="開啟導覽選單">☰</button>
       <div class="breadcrumb">
         <span class="dept-tag" id="bcDept"></span>
         <span class="sep" id="bcSep">›</span>
         <h1 id="bcBoard">Zyra</h1>
       </div>
       <div class="topbar-actions" id="topbarActions">
-        <button class="pill-btn" id="btnGlobalSearch" title="全域搜尋（Ctrl / ⌘ + K）">⌕ 搜尋</button>
-        <button class="pill-btn" id="btnColumns">≡ 看板欄位</button>
-        <button class="pill-btn" id="btnLibrary">🏷 範本與標籤庫</button>
+        <button class="pill-btn" id="btnGlobalSearch" title="全域搜尋（Ctrl / ⌘ + K）" aria-label="全域搜尋">⌕<span class="label">搜尋</span></button>
+        <button class="pill-btn" id="btnColumns" aria-label="看板欄位">≡<span class="label">欄位</span></button>
+        <button class="pill-btn" id="btnLibrary" aria-label="範本與標籤庫">🏷<span class="label">標籤庫</span></button>
         <button class="btn-primary" id="btnNewCard">＋ 新增卡片</button>
       </div>
     </header>
@@ -63,12 +64,9 @@
         <input type="text" id="filterSearch" placeholder="在這個看板搜尋（按 /）" aria-label="在目前看板搜尋卡片">
         <button class="clear hidden" id="filterSearchClear" aria-label="清除搜尋文字">×</button>
       </div>
-      <select class="filter-select" id="filterAssignee" aria-label="依負責人篩選"></select>
-      <select class="filter-select" id="filterLabel" aria-label="依標籤篩選"></select>
-      <select class="filter-select" id="filterDue" aria-label="依到期狀態篩選"></select>
-      <select class="filter-select" id="filterPriority" aria-label="依優先級篩選"></select>
-      <button class="pill-btn" id="filterMine" aria-pressed="false">只看我的</button>
-      <button class="pill-btn hidden" id="filterReset">清除篩選</button>
+      <span id="filterChips" style="display:contents;"></span>
+      <button class="filter-add" id="filterAdd">＋ 篩選</button>
+      <button class="pill-btn hidden" id="filterReset">清除全部</button>
       <span class="filter-summary" id="filterSummary" aria-live="polite"></span>
     </div>
 
@@ -79,6 +77,7 @@
 <!-- 螢幕閱讀器即時播報 -->
 <div id="liveRegion" class="sr-only" role="status" aria-live="polite"></div>
 
+<div class="nav-backdrop" id="navBackdrop"></div>
 <div class="overlay" id="overlay"></div>
 <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
@@ -94,9 +93,12 @@
   </div>
   <div id="templateList"></div>
 
-  <div class="drawer-section-title"><span>標籤庫</span></div>
+  <div class="drawer-section-title">
+    <span>標籤庫</span>
+    <button class="add-row-btn" id="btnToggleLabelCreate">＋ 建立標籤</button>
+  </div>
   <div id="labelList"></div>
-  <div class="label-create-box" id="labelCreateBox"></div>
+  <div class="label-create-box hidden" id="labelCreateBox"></div>
 
   <div class="modal-actions" style="border-top:none; padding-top:22px;">
     <button class="btn-secondary" id="btnCloseDrawer">關閉</button>
@@ -113,8 +115,10 @@
     <input type="text" id="ndName" placeholder="例如：行銷部門" data-autofocus>
   </div>
   <div class="field-group">
-    <label for="ndBoardName">預設看板名稱</label>
-    <input type="text" id="ndBoardName" value="看板">
+    <label>一併建立的看板</label>
+    <div class="chip-editor" id="ndBoards"></div>
+    <input class="chip-add-input" id="ndAddBoardInput" placeholder="＋ 看板名稱，按 Enter" aria-label="新增看板名稱">
+    <span class="settings-hint">可以一次建立多個看板，例如「專案看板」「請款看板」。每個看板都會套用你在設定選的預設欄位。</span>
   </div>
   <div class="inline-error hidden" id="ndError" role="alert"></div>
   <div class="modal-actions">
@@ -162,62 +166,65 @@
 </div>
 
 
-<!-- ================= 卡片 ================= -->
-<div class="modal" id="modalCard" role="dialog" aria-modal="true" aria-labelledby="cardModalTitle" aria-hidden="true">
-  <h2 id="cardModalTitle">新增卡片</h2>
-  <div class="modal-sub" id="cardModalSub"></div>
-
+<!-- ================= 卡片：快速建立 ================= -->
+<div class="modal narrow" id="modalCardCreate" role="dialog" aria-modal="true" aria-labelledby="ccTitle" aria-hidden="true">
+  <h2 id="ccTitle">新增卡片</h2>
+  <div class="modal-sub" id="ccSub"></div>
   <div class="field-group">
-    <label for="cardTitleInput">卡片標題</label>
-    <input type="text" id="cardTitleInput" placeholder="這張卡片要完成什麼？" data-autofocus>
+    <label for="ccTitleInput">卡片標題</label>
+    <input type="text" id="ccTitleInput" placeholder="這張卡片要完成什麼？" data-autofocus>
   </div>
-
-  <div class="field-grid">
-    <div class="field-group">
-      <label for="cardColumnSelect">所在欄位</label>
-      <select id="cardColumnSelect"></select>
-    </div>
-    <div class="field-group">
-      <label for="cardAssigneeSelect">負責人</label>
-      <select id="cardAssigneeSelect"></select>
-    </div>
-  </div>
-
-  <div class="field-grid">
-    <div class="field-group">
-      <label for="cardDueInput">到期日</label>
-      <input type="date" id="cardDueInput">
-      <div class="seg-row" style="margin:2px 0 0;">
-        <button class="seg-btn" id="btnDueToday" type="button">今天</button>
-        <button class="seg-btn" id="btnDueClear" type="button">清除</button>
-      </div>
-    </div>
-    <div class="field-group">
-      <label for="cardPrioritySelect">優先級</label>
-      <select id="cardPrioritySelect"></select>
-    </div>
-  </div>
-
   <div class="field-group">
-    <label for="cardDescInput">描述</label>
-    <textarea id="cardDescInput" placeholder="補充背景、驗收標準、相關連結…"></textarea>
+    <label for="ccColumnSelect">放在哪一欄</label>
+    <select id="ccColumnSelect"></select>
+  </div>
+  <div class="inline-error hidden" id="ccError" role="alert"></div>
+  <div class="modal-actions">
+    <span class="settings-hint">建立後會直接開啟卡片，其餘細節在裡面補。</span>
+    <button class="btn-text" id="ccCancel">取消</button>
+    <button class="btn-primary" id="ccSubmit">建立</button>
+  </div>
+</div>
+
+
+<!-- ================= 卡片：工作區 ================= -->
+<div class="modal card-detail" id="modalCardDetail" role="dialog" aria-modal="true" aria-labelledby="cdTitle" aria-hidden="true">
+  <div class="cd-head">
+    <div class="cd-path" id="cdPath"></div>
+    <button class="kebab-btn" id="cdMenu" title="卡片選項" aria-label="卡片選項">⋯</button>
+    <button class="icon-btn" id="cdClose" title="關閉" aria-label="關閉卡片">×</button>
   </div>
 
-  <div class="field-group">
-    <label>標籤</label>
-    <div class="chip-row" id="cardLabelChips"></div>
-    <button class="add-row-btn" id="btnOpenLabelPicker">＋ 選擇或建立標籤</button>
-  </div>
+  <h2 class="cd-title" id="cdTitle" tabindex="0" role="button" title="點一下可編輯標題"></h2>
 
-  <div class="inline-error hidden" id="cardError" role="alert"></div>
+  <div class="cd-props" id="cdProps"></div>
 
-  <div class="modal-actions" style="justify-content:space-between;">
-    <div id="cardDeleteArea"></div>
-    <div style="display:flex; gap:8px; margin-left:auto;">
-      <button class="btn-text" id="cardCancel">取消</button>
-      <button class="btn-primary" id="cardSave">儲存</button>
+  <section class="cd-section">
+    <div class="cd-section-head"><h3>描述</h3></div>
+    <div class="cd-desc" id="cdDesc" tabindex="0" role="button" title="點一下可編輯"></div>
+  </section>
+
+  <section class="cd-section">
+    <div class="cd-section-head">
+      <h3>檢查清單</h3>
+      <span class="cd-count" id="cdCkMeta"></span>
+      <button class="add-row-btn" id="cdAddCheckItem">＋ 新增子任務</button>
     </div>
-  </div>
+    <div id="cdChecklist"></div>
+  </section>
+
+  <section class="cd-section">
+    <div class="cd-section-head">
+      <h3>標籤</h3>
+      <button class="add-row-btn" id="cdAddLabel">＋ 加標籤</button>
+    </div>
+    <div id="cdLabels"></div>
+  </section>
+
+  <section class="cd-section">
+    <div class="cd-section-head"><h3>活動</h3></div>
+    <div id="cdActivity"></div>
+  </section>
 </div>
 
 
@@ -230,6 +237,41 @@
   <div class="label-create-box hidden" id="pickerCreateBox"></div>
   <div class="modal-actions">
     <button class="btn-secondary" id="pickerDone">完成</button>
+  </div>
+</div>
+
+
+<!-- ================= 範本內容（第二層） ================= -->
+<div class="modal narrow" id="modalTemplate" role="dialog" aria-modal="true" aria-labelledby="tmTitle" aria-hidden="true">
+  <h2 id="tmTitle">範本</h2>
+  <div class="modal-sub">範本決定用它建立的標籤要記錄哪些欄位。改動會套用到所有使用此範本的標籤。</div>
+  <div class="field-group">
+    <label for="tmName">範本名稱</label>
+    <input type="text" id="tmName" data-autofocus>
+  </div>
+  <div class="drawer-section-title"><span>欄位</span></div>
+  <div id="tmFields"></div>
+  <button class="add-row-btn" id="tmAddField">＋ 新增欄位</button>
+  <div class="settings-hint" id="tmUsage" style="margin-top:12px;"></div>
+  <div class="modal-actions" style="justify-content:space-between;">
+    <button class="btn-danger-text" id="tmDelete">刪除範本</button>
+    <button class="btn-secondary" id="tmClose">完成</button>
+  </div>
+</div>
+
+
+<!-- ================= 標籤內容（第二層） ================= -->
+<div class="modal narrow" id="modalLabel" role="dialog" aria-modal="true" aria-labelledby="lbTitle" aria-hidden="true">
+  <h2 id="lbTitle"></h2>
+  <div class="modal-sub" id="lbSub"></div>
+  <div id="lbBody"></div>
+  <div class="modal-actions" style="justify-content:space-between;">
+    <button class="btn-danger-text" id="lbDelete">刪除標籤</button>
+    <span style="display:flex; gap:8px; align-items:center;">
+      <button class="btn-secondary" id="lbColor">換顏色</button>
+      <button class="btn-secondary" id="lbEdit">編輯內容</button>
+      <button class="btn-text" id="lbClose">完成</button>
+    </span>
   </div>
 </div>
 
@@ -251,66 +293,81 @@
   <h2 id="settingsTitle">設定</h2>
   <div class="modal-sub">外觀偏好只套用在這台裝置、這個瀏覽器上；成員與公司名稱則是資料的一部分。</div>
 
-  <div class="drawer-section-title" style="margin-top:0;"><span>外觀</span></div>
-  <div class="field-group">
-    <label>主題</label>
-    <div class="seg-row" id="themeModeRow">
-      <button class="seg-btn" data-mode="system">系統預設</button>
-      <button class="seg-btn" data-mode="light">亮色</button>
-      <button class="seg-btn" data-mode="dark">深色</button>
-    </div>
-  </div>
-  <div class="field-group">
-    <label>配色</label>
-    <div class="swatch-row" id="accentSwatches"></div>
-  </div>
-  <div class="field-group">
-    <label>卡片密度</label>
-    <div class="seg-row" id="cardDensityRow">
-      <button class="seg-btn" data-density="standard">標準</button>
-      <button class="seg-btn" data-density="compact">精簡</button>
-    </div>
-  </div>
-  <div class="field-group">
-    <label class="toggle-row"><input type="checkbox" id="toggleShowLabels"> 卡片上顯示標籤</label>
-    <label class="toggle-row"><input type="checkbox" id="toggleShowMeta"> 卡片上顯示負責人與到期日</label>
+  <div class="tabs" id="settingsTabs" role="tablist">
+    <button class="tab-btn selected" data-tab="appearance" role="tab" aria-selected="true">外觀</button>
+    <button class="tab-btn" data-tab="members" role="tab" aria-selected="false">成員</button>
+    <button class="tab-btn" data-tab="prefs" role="tab" aria-selected="false">偏好</button>
+    <button class="tab-btn" data-tab="data" role="tab" aria-selected="false">資料</button>
   </div>
 
-  <div class="drawer-section-title"><span>帳號與公司</span></div>
-  <div class="field-grid">
+  <!-- 外觀 -->
+  <div class="tab-panel selected" data-tab="appearance" role="tabpanel">
     <div class="field-group">
-      <label for="settingsAccountName">你的顯示名稱</label>
-      <input type="text" id="settingsAccountName">
+      <label>主題</label>
+      <div class="seg-row" id="themeModeRow">
+        <button class="seg-btn" data-mode="system">系統預設</button>
+        <button class="seg-btn" data-mode="light">亮色</button>
+        <button class="seg-btn" data-mode="dark">深色</button>
+      </div>
     </div>
     <div class="field-group">
-      <label for="settingsCompanyName">公司名稱</label>
-      <input type="text" id="settingsCompanyName">
+      <label>配色</label>
+      <div class="swatch-row" id="accentSwatches"></div>
+    </div>
+    <div class="field-group">
+      <label>卡片密度</label>
+      <div class="seg-row" id="cardDensityRow">
+        <button class="seg-btn" data-density="standard">標準</button>
+        <button class="seg-btn" data-density="compact">精簡</button>
+      </div>
+    </div>
+    <div class="field-group">
+      <label>卡片上顯示的資訊</label>
+      <label class="toggle-row"><input type="checkbox" id="toggleShowLabels"> 顯示標籤</label>
+      <label class="toggle-row"><input type="checkbox" id="toggleShowMeta"> 顯示負責人與到期日</label>
     </div>
   </div>
-  <div class="field-group">
-    <label for="settingsWhoAmI">我是哪位成員</label>
-    <select id="settingsWhoAmI"></select>
-    <span class="settings-hint">指定後才能使用篩選列的「只看我的」，新增卡片時也會預設指派給你。</span>
+
+  <!-- 成員 -->
+  <div class="tab-panel" data-tab="members" role="tabpanel">
+    <div class="field-grid">
+      <div class="field-group">
+        <label for="settingsAccountName">你的顯示名稱</label>
+        <input type="text" id="settingsAccountName">
+      </div>
+      <div class="field-group">
+        <label for="settingsCompanyName">公司名稱</label>
+        <input type="text" id="settingsCompanyName">
+      </div>
+    </div>
+    <div class="field-group">
+      <label for="settingsWhoAmI">我是哪位成員</label>
+      <select id="settingsWhoAmI"></select>
+      <span class="settings-hint">指定後才能使用篩選列的「只看我的」，新增卡片時也會預設指派給你。</span>
+    </div>
+    <div class="drawer-section-title"><span>成員名單</span></div>
+    <div id="memberList"></div>
+    <div class="field-row" style="margin-top:10px;">
+      <input type="text" id="newMemberInput" placeholder="新成員姓名" aria-label="新成員姓名">
+      <button class="btn-secondary" id="btnAddMember" style="padding:7px 12px; font-size:12.5px;">新增</button>
+    </div>
   </div>
 
-  <div class="drawer-section-title"><span>成員</span></div>
-  <div id="memberList"></div>
-  <div class="field-row" style="margin-top:10px;">
-    <input type="text" id="newMemberInput" placeholder="新成員姓名" aria-label="新成員姓名">
-    <button class="btn-secondary" id="btnAddMember" style="padding:7px 12px; font-size:12.5px;">新增</button>
+  <!-- 偏好 -->
+  <div class="tab-panel" data-tab="prefs" role="tabpanel">
+    <div class="field-group">
+      <label for="settingsDefaultBoardTpl">新看板的預設欄位</label>
+      <select id="settingsDefaultBoardTpl"></select>
+    </div>
+    <div class="field-group">
+      <label class="toggle-row"><input type="checkbox" id="toggleNewDeptExpanded"> 新增部門時預設展開看板列表</label>
+    </div>
   </div>
 
-  <div class="drawer-section-title"><span>看板偏好</span></div>
-  <div class="field-group">
-    <label for="settingsDefaultBoardTpl">新看板的預設欄位</label>
-    <select id="settingsDefaultBoardTpl"></select>
+  <!-- 資料 -->
+  <div class="tab-panel" data-tab="data" role="tabpanel">
+    <div class="field-group" id="dataRow"></div>
   </div>
-  <div class="field-group">
-    <label class="toggle-row"><input type="checkbox" id="toggleNewDeptExpanded"> 新增部門時預設展開看板列表</label>
-  </div>
-
-  <div class="drawer-section-title"><span>資料</span></div>
-  <div class="field-group" id="dataRow"></div>
 
   <div class="modal-actions">
     <button class="btn-secondary" id="settingsClose">完成</button>

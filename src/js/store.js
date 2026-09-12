@@ -49,9 +49,13 @@
       dueDate: f.dueDate || '',
       priority: f.priority || 'normal',
       labelIds: f.labelIds ? f.labelIds.slice() : [],
+      checklist: f.checklist ? f.checklist.slice() : [],
       createdAt: now,
       updatedAt: now
     };
+  }
+  function makeChecklistItem(text) {
+    return { id: util.uid('ck'), text: text, done: false };
   }
 
   // ---------- 預設狀態 ----------
@@ -128,7 +132,16 @@
 
     s.departments = [dept1, dept2];
     s.cards = [
-      makeCard(b1.id, b1.columns[0].id, { title: '系統需求訪談', assigneeId: alice.id, dueDate: util.toISODate(soon), priority: 'high', labelIds: [l1.id], description: '與客戶 IT 部門確認既有系統介接範圍。' }),
+      makeCard(b1.id, b1.columns[0].id, {
+        title: '系統需求訪談', assigneeId: alice.id, dueDate: util.toISODate(soon),
+        priority: 'high', labelIds: [l1.id],
+        description: '與客戶 IT 部門確認既有系統介接範圍。',
+        checklist: (function () {
+          var a = makeChecklistItem('擬訪談大綱'); a.done = true;
+          var b = makeChecklistItem('約訪談時間'); b.done = true;
+          return [a, b, makeChecklistItem('會議記錄與確認信')];
+        })()
+      }),
       makeCard(b1.id, b1.columns[1].id, { title: 'API 規格確認', assigneeId: bob.id, dueDate: util.toISODate(past), priority: 'urgent', labelIds: [l1.id] }),
       makeCard(b1.id, b1.columns[0].id, { title: '教育訓練資料整理', assigneeId: '', priority: 'low' }),
       makeCard(b1.id, b1.columns[2].id, { title: 'UAT 測試案例撰寫', assigneeId: carol.id, labelIds: [l1.id] }),
@@ -174,6 +187,13 @@
       if (typeof c.dueDate !== 'string') c.dueDate = '';
       if (C.PRIORITIES.indexOf(c.priority) === -1) c.priority = 'normal';
       if (!Array.isArray(c.labelIds)) c.labelIds = [];
+      // v2 → v2.2：卡片加入檢查清單
+      if (!Array.isArray(c.checklist)) c.checklist = [];
+      c.checklist = c.checklist.filter(function (it) {
+        return it && typeof it.text === 'string';
+      }).map(function (it) {
+        return { id: it.id || util.uid('ck'), text: it.text, done: !!it.done };
+      });
       if (!c.createdAt) c.createdAt = now;
       if (!c.updatedAt) c.updatedAt = c.createdAt;
     });
@@ -337,7 +357,7 @@
   store.make = {
     field: makeField, template: makeTemplate, label: makeLabel,
     column: makeColumn, board: makeBoard, dept: makeDept,
-    member: makeMember, card: makeCard
+    member: makeMember, card: makeCard, checklistItem: makeChecklistItem
   };
   store.migrate = migrate;
   store.emptyState = emptyState;

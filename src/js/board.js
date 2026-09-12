@@ -55,9 +55,10 @@
   function renderEmptyState() {
     var wrap = util.el('div', 'board-empty');
     wrap.innerHTML =
+      '<div class="board-empty-mark" aria-hidden="true">Z</div>' +
       '<h2>歡迎使用 Zyra</h2>' +
-      '<p>從建立第一個部門開始。每個部門有自己的看板、範本與標籤庫，' +
-      '彼此獨立，適合行銷、專案、設計等不同團隊各自運作。<br>' +
+      '<p>從建立第一個部門開始。每個部門有自己的看板、範本與標籤庫，彼此獨立，' +
+      '適合行銷、專案、設計等不同團隊各自運作。<br>' +
       '想先看看實際長什麼樣，也可以載入一份範例資料，隨時可以清空。</p>';
     var actions = util.el('div', 'board-empty-actions');
 
@@ -250,14 +251,14 @@
     title.innerHTML = util.highlight(card.title, f.text);
     wrap.appendChild(title);
 
-    // 標籤
     if (s.showCardLabels) {
       var labels = M.labelsOfCard(dept, card);
       if (labels.length) {
         var chips = util.el('div', 'chip-row');
         labels.forEach(function (lab) {
           var tok = C.COLOR_TOKENS[lab.colorKey] || C.COLOR_TOKENS.teal;
-          var chip = util.el('span', 'label-chip', M.labelPrimaryText(dept, lab));
+          var chip = util.el('span', 'label-chip');
+          chip.appendChild(util.el('span', 'txt', M.labelPrimaryText(dept, lab)));
           chip.style.background = tok.soft;
           chip.style.color = tok.fg;
           chip.title = M.labelSummary(dept, lab);
@@ -267,31 +268,36 @@
       }
     }
 
-    // 負責人 / 到期日 / 有描述
+    // 優先級 / 負責人 / 到期日 / 有描述
+    var meta = util.el('div', 'card-meta');
+    var any = false;
+
+    // 優先級只在「緊急」與「高」時出現，其餘不佔視覺
+    if (card.priority === 'urgent' || card.priority === 'high') {
+      var pri = util.el('span', 'pri-chip', C.PRIORITY_LABELS[card.priority]);
+      pri.dataset.pri = card.priority;
+      pri.title = '優先級：' + C.PRIORITY_LABELS[card.priority];
+      meta.appendChild(pri);
+      any = true;
+    }
+
     if (s.showCardMeta) {
-      var meta = util.el('div', 'card-meta');
-      var any = false;
-
-      var member = M.getMember(card.assigneeId);
-      if (member) {
-        var tok2 = C.COLOR_TOKENS[member.colorKey] || C.COLOR_TOKENS.slate;
-        var who = util.el('span', 'card-meta-item');
-        var av = util.el('span', 'avatar-xs', util.initial(member.name));
-        av.style.background = tok2.soft;
-        av.style.color = tok2.fg;
-        who.appendChild(av);
-        who.appendChild(util.el('span', '', member.name));
-        who.title = '負責人：' + member.name;
-        meta.appendChild(who);
-        any = true;
-      }
-
       if (card.dueDate) {
         var st = util.dueStatus(card.dueDate);
         var due = util.el('span', 'due-chip', util.dueText(card.dueDate));
         due.dataset.due = st === 'later' ? 'normal' : st;
         due.title = '到期日：' + card.dueDate;
         meta.appendChild(due);
+        any = true;
+      }
+
+      var pr = M.checklistProgress(card);
+      if (pr.total) {
+        var ck = util.el('span', 'card-meta-item ck-mini');
+        ck.textContent = '☑ ' + pr.done + '/' + pr.total;
+        if (pr.done === pr.total) ck.dataset.full = '1';
+        ck.title = '檢查清單：' + pr.done + ' / ' + pr.total + ' 已完成';
+        meta.appendChild(ck);
         any = true;
       }
 
@@ -302,8 +308,22 @@
         any = true;
       }
 
-      if (any) wrap.appendChild(meta);
+      // 負責人靠右，只顯示頭像——名字重複出現在每張卡上很佔空間，
+      // 需要確認是誰時 hover 或開卡片即可。
+      var member = M.getMember(card.assigneeId);
+      if (member) {
+        meta.appendChild(util.el('span', 'spacer'));
+        var tok2 = C.COLOR_TOKENS[member.colorKey] || C.COLOR_TOKENS.slate;
+        var av = util.el('span', 'avatar-xs', util.initial(member.name));
+        av.style.background = tok2.soft;
+        av.style.color = tok2.fg;
+        av.title = '負責人：' + member.name;
+        meta.appendChild(av);
+        any = true;
+      }
     }
+
+    if (any) wrap.appendChild(meta);
 
     // 無障礙標籤：把視覺資訊濃縮成一句話
     wrap.setAttribute('aria-label', ariaLabelFor(card));
@@ -311,7 +331,7 @@
     // --- 互動 ---
     wrap.addEventListener('click', function () {
       Z.store.session.selectedCardId = card.id;
-      Z.card.openEdit(card.id);
+      Z.card.openDetail(card.id);
     });
 
     wrap.addEventListener('keydown', function (e) { onCardKey(e, card); });
@@ -369,6 +389,8 @@
     var who = M.memberName(card.assigneeId);
     if (who) parts.push('負責人 ' + who);
     if (card.dueDate) parts.push('到期 ' + util.dueText(card.dueDate));
+    var pr = M.checklistProgress(card);
+    if (pr.total) parts.push('子任務 ' + pr.done + ' 之 ' + pr.total + ' 已完成');
     return parts.join('，');
   }
 
@@ -377,7 +399,7 @@
   function onCardKey(e, card) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      Z.card.openEdit(card.id);
+      Z.card.openDetail(card.id);
       return;
     }
 

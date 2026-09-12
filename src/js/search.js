@@ -106,7 +106,7 @@
     Z.store.session.selectedCardId = hit.card.id;
     Z.render();
     Z.filters.render();
-    Z.card.openEdit(hit.card.id);
+    Z.card.openDetail(hit.card.id);
   }
 
   Z.search = search;

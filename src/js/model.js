@@ -133,6 +133,13 @@
     return S().cards.find(function (c) { return c.id === id; }) || null;
   };
 
+  /** 檢查清單進度 {done, total, pct}；沒有子任務時 total 為 0 */
+  M.checklistProgress = function (card) {
+    var list = card.checklist || [];
+    var done = list.filter(function (i) { return i.done; }).length;
+    return { done: done, total: list.length, pct: list.length ? Math.round(done / list.length * 100) : 0 };
+  };
+
   /** 某欄位的全部卡片（未套用篩選） */
   M.cardsIn = function (boardId, columnId) {
     return S().cards.filter(function (c) {

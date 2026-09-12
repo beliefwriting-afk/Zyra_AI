@@ -11,7 +11,7 @@
 (function (Z) {
   'use strict';
 
-  var M = Z.model, A = Z.actions, ui = Z.ui;
+  var M = Z.model, A = Z.actions, ui = Z.ui, util = Z.util;
 
   var topbarEl = {};
 
@@ -32,6 +32,19 @@
 
   renderAll.topbar = renderTopbar;
 
+  /**
+   * 重繪「開啟中的面板」。
+   * 面板有各自的 render、不受 Z.render() 影響（那是刻意的，避免編輯時焦點被打斷），
+   * 但當資料從外部被換掉時——最典型的就是 Ctrl+Z——面板就必須主動跟上，
+   * 否則畫面會停在舊內容，使用者以為復原沒生效。
+   */
+  renderAll.panels = function () {
+    if (Z.card && Z.card.refresh) Z.card.refresh();
+    if (Z.library && ui.isOpen('libraryDrawer')) Z.library.render();
+    if (Z.settings && ui.isOpen('modalSettings')) Z.settings.render();
+    Z.filters.render();
+  };
+
   function renderTopbar() {
     var dept = M.activeDept();
     var board = M.activeBoard();
@@ -43,8 +56,8 @@
 
     topbarEl.actions.classList.toggle('hidden', !has);
     Z.filters.setVisible(has);
-
     topbarEl.library.disabled = !dept;
+
   }
 
   // ---------- 快捷鍵 ----------
