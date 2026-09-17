@@ -68,7 +68,7 @@
       currentMemberId: '',
       sidebarCollapsed: false,
       themeMode: 'system',
-      accentColor: 'green',
+      accentColor: 'purple',
       showCardLabels: true,
       showCardMeta: true,
       compactCards: false,
@@ -171,9 +171,11 @@
       }
     });
 
-    if (!C.ACCENT_THEMES[s.accentColor]) s.accentColor = 'green';
-    if (C.THEME_MODES.indexOf(s.themeMode) === -1) s.themeMode = 'system';
-    if (!C.BOARD_TEMPLATES[s.defaultBoardTemplate]) s.defaultBoardTemplate = 'basic';
+    // 回退值一律取自 defaults，不要再寫一次字面值——
+    // 預設值改了而這裡沒跟著改，是很難察覺的那種不一致。
+    if (!C.ACCENT_THEMES[s.accentColor]) s.accentColor = defaults.accentColor;
+    if (C.THEME_MODES.indexOf(s.themeMode) === -1) s.themeMode = defaults.themeMode;
+    if (!C.BOARD_TEMPLATES[s.defaultBoardTemplate]) s.defaultBoardTemplate = defaults.defaultBoardTemplate;
 
     if (!Array.isArray(s.departments)) s.departments = [];
     if (!Array.isArray(s.cards)) s.cards = [];

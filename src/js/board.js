@@ -89,12 +89,12 @@
     head.draggable = true;
     var left = util.el('span', 'column-head-left');
     left.innerHTML =
-      '<span class="column-drag-handle" aria-hidden="true">⠿</span>' +
+      '<span class="column-drag-handle" aria-hidden="true">' + Z.icon('grip') + '</span>' +
       '<span class="column-title">' + util.escapeHtml(col.name) + '</span>';
     var count = util.el('span', 'column-count', hidden ? cards.length + '/' + all.length : String(all.length));
     if (hidden) count.title = hidden + ' 張卡片被目前的篩選條件隱藏';
 
-    var kebab = util.el('button', 'kebab-btn', '⋯');
+    var kebab = util.iconEl('button', 'kebab-btn', 'more');
     kebab.title = '欄位選項';
     kebab.setAttribute('aria-label', col.name + ' 的欄位選項');
     kebab.addEventListener('click', function (e) {
@@ -130,7 +130,7 @@
       cards.forEach(function (card) { stack.appendChild(renderCard(dept, card)); });
     }
 
-    var add = util.el('button', 'add-card-btn', '＋ 新增卡片');
+    var add = util.iconEl('button', 'add-card-btn', 'plus', null, '新增卡片');
     add.addEventListener('click', function () {
       Z.card.openCreate(b.id, col.id);
     });
@@ -294,7 +294,7 @@
       var pr = M.checklistProgress(card);
       if (pr.total) {
         var ck = util.el('span', 'card-meta-item ck-mini');
-        ck.textContent = '☑ ' + pr.done + '/' + pr.total;
+        ck.innerHTML = Z.icon('checkSquare') + '<span>' + pr.done + '/' + pr.total + '</span>';
         if (pr.done === pr.total) ck.dataset.full = '1';
         ck.title = '檢查清單：' + pr.done + ' / ' + pr.total + ' 已完成';
         meta.appendChild(ck);
@@ -302,7 +302,7 @@
       }
 
       if (card.description) {
-        var d = util.el('span', 'card-meta-item desc-dot', '☰');
+        var d = util.iconEl('span', 'card-meta-item desc-dot', 'text');
         d.title = '此卡片有描述';
         meta.appendChild(d);
         any = true;

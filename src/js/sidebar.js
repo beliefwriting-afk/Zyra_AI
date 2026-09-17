@@ -88,7 +88,7 @@
       el.deptScroll.appendChild(renderDept(dept));
     });
 
-    var addDept = util.el('button', 'btn-new-dept', '＋ 新增部門');
+    var addDept = util.iconEl('button', 'btn-new-dept', 'plus', null, '新增部門');
     addDept.addEventListener('click', function () { Z.dialogs.newDepartment(); });
     el.deptScroll.appendChild(addDept);
   };
@@ -100,13 +100,13 @@
     var headMain = util.el('button', 'dept-head-main');
     headMain.setAttribute('aria-expanded', String(!!dept.expanded));
     headMain.innerHTML =
-      '<span class="dept-caret' + (dept.expanded ? ' open' : '') + '" aria-hidden="true">▸</span>' +
+      '<span class="dept-caret' + (dept.expanded ? ' open' : '') + '" aria-hidden="true">' + Z.icon('chevronRight') + '</span>' +
       '<span class="dept-name">' + util.escapeHtml(dept.name) + '</span>';
     headMain.addEventListener('click', function () {
       A.dispatch('toggleDept', { deptId: dept.id });
     });
 
-    var kebab = util.el('button', 'kebab-btn', '⋯');
+    var kebab = util.iconEl('button', 'kebab-btn', 'more');
     kebab.title = '部門選項';
     kebab.setAttribute('aria-label', dept.name + ' 的部門選項');
     kebab.addEventListener('click', function (e) {
@@ -152,7 +152,7 @@
 
       var count = util.el('span', 'board-count', String(M.boardCardCount(b.id)));
 
-      var kebab = util.el('button', 'kebab-btn', '⋯');
+      var kebab = util.iconEl('button', 'kebab-btn', 'more');
       kebab.title = '看板選項';
       kebab.setAttribute('aria-label', b.name + ' 的看板選項');
       kebab.addEventListener('click', function (e) {
@@ -178,7 +178,7 @@
       list.appendChild(row);
     });
 
-    var add = util.el('button', 'add-row-mini', '＋ 新增看板');
+    var add = util.iconEl('button', 'add-row-mini', 'plus', null, '新增看板');
     add.addEventListener('click', function () { Z.dialogs.newBoard(dept.id); });
     list.appendChild(add);
 

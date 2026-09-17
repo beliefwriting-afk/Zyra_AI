@@ -221,7 +221,7 @@
       if (m.id === s.currentMemberId) row.appendChild(util.el('span', 'member-badge', '我'));
 
       var count = M.memberCardCount(m.id);
-      var rm = util.el('button', 'kebab-btn', '×');
+      var rm = util.iconEl('button', 'kebab-btn', 'close', '移除');
       rm.title = '移除成員';
       rm.setAttribute('aria-label', '移除成員 ' + m.name);
       rm.addEventListener('click', function (e) {

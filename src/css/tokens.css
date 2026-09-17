@@ -2,152 +2,173 @@
    Zyra — 設計 token
    色彩、字體、陰影、間距的單一事實來源。
    所有顏色必須在此定義，元件層不得寫死色值。
+
+   風格方向：柔和圓潤。
+   - 中性色偏暖（灰裡帶一點黃），不用冷灰。純冷灰配上大量留白
+     會顯得像後台管理介面；暖灰同樣乾淨，但看久了不冷。
+   - 主色降飽和度。工作工具整天開著，高飽和的色塊看久會累。
+   - 陰影分兩層：一層貼近的細影定義邊界，一層擴散的大影做浮起。
+     單層大陰影會糊成一團髒影子。
    ============================================================ */
 
 :root{
   /* 文字 */
-  --ink:#171B24;
-  --ink-soft:#545B6C;
-  --ink-faint:#8A90A0;
+  --ink:#2E2C28;
+  --ink-soft:#6B665E;
+  --ink-faint:#706B63;
 
   /* 表面 */
-  --paper:#F1F2F5;
+  --paper:#F7F6F3;
   --surface:#FFFFFF;
-  --surface-sunken:#E7E9EE;
+  --surface-sunken:#F0EEE9;
   --surface-raised:#FFFFFF;
 
   /* 邊界 */
-  --border:#DADDE3;
-  --border-strong:#C3C7D1;
+  --border:#E7E3DC;
+  --border-strong:#98938B;
 
   /* 主色（由 theme.js 依使用者選擇覆寫） */
-  --accent:#0C6E58;
+  --accent:#7955C5;
   --accent-ink:#FFFFFF;
-  --accent-soft:#E1F0EA;
+  --accent-soft:#F0EBF9;
 
   /* 語意色 */
-  --danger:#B23B3B;
-  --danger-soft:#F6E4E4;
-  --warn:#A8721F;
-  --warn-soft:#F6ECD9;
-  --ok:#2F7A4F;
-  --ok-soft:#E3F1E8;
+  --danger:#AB4C46;
+  --danger-soft:#F8E9E7;
+  --warn:#83621B;
+  --warn-soft:#F3E9D3;
+  --ok:#3D7554;
+  --ok-soft:#E4EFE8;
 
   /* 標籤色 */
-  --tag-teal:#0C6E58;   --tag-teal-soft:#E1F0EA;
-  --tag-gold:#A8721F;   --tag-gold-soft:#F6ECD9;
-  --tag-plum:#7C4A93;   --tag-plum-soft:#F1E6F5;
-  --tag-slate:#3B5B82;  --tag-slate-soft:#E7EDF5;
-  --tag-rose:#A83A5B;   --tag-rose-soft:#F7E3E9;
-  --tag-moss:#4A7A2F;   --tag-moss-soft:#E9F2E1;
+  --tag-teal:#37745F;   --tag-teal-soft:#E4EFEA;
+  --tag-gold:#83621B;   --tag-gold-soft:#F3E9D3;
+  --tag-plum:#7A5390;   --tag-plum-soft:#F0E8F4;
+  --tag-slate:#4A6180;  --tag-slate-soft:#E8ECF2;
+  --tag-rose:#A34A63;   --tag-rose-soft:#F6E6EA;
+  --tag-moss:#517439;   --tag-moss-soft:#E9F0E0;
 
   /* 優先級 */
-  --pri-urgent:#B23B3B;
-  --pri-high:#C2600C;
-  --pri-normal:#8A90A0;
-  --pri-low:#A7ACBC;
+  --pri-urgent:#AB4C46;
+  --pri-high:#A9662A;
+  --pri-normal:#706B63;
+  --pri-low:#ADA79D;
 
-  /* 字體 */
-  --font-sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;
+  /* 字體
+     Plus Jakarta Sans 的字腔較圓、末端收得柔，比 IBM Plex Sans
+     少一點工程味。中文一律走系統字型——Google Fonts 的中文檔動輒數 MB，
+     為了字型讓首屏多等兩秒不划算。 */
+  --font-sans:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
   --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
 
   /* 陰影 */
-  --shadow-lift:0 8px 24px -8px rgba(23,27,36,.28);
-  --shadow-pop:0 12px 32px -10px rgba(23,27,36,.34);
+  --shadow-sm:0 1px 2px rgba(46,44,40,.05);
+  --shadow-lift:0 1px 2px rgba(46,44,40,.05), 0 8px 20px -8px rgba(46,44,40,.14);
+  --shadow-pop:0 2px 6px rgba(46,44,40,.06), 0 18px 44px -14px rgba(46,44,40,.22);
+
+  /* 品牌標誌。深色模式要換檔——黑色筆畫在深底上等於消失，
+     不是調個透明度就能解決的。 */
+  --logo:url('../img/logo.png');
 
   /* 圓角 */
-  --r-sm:6px;
-  --r-md:8px;
-  --r-lg:12px;
-  --r-xl:14px;
+  --r-sm:8px;
+  --r-md:10px;
+  --r-lg:14px;
+  --r-xl:20px;
 
   color-scheme:light;
 }
 
-/* 深色：系統偏好（除非使用者明確選了亮色） */
+/* 深色 token 只寫一次，亮暗兩個選擇器共用。
+   以前是整份複製貼上兩遍，改一個顏色要記得改兩個地方——遲早會漏。 */
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --ink:#E7E9EE;
-    --ink-soft:#A7ACBC;
-    --ink-faint:#6D7385;
+    --ink:#EBE8E2;
+    --ink-soft:#ADA79D;
+    --ink-faint:#918B81;
 
-    --paper:#13151C;
-    --surface:#1B1E27;
-    --surface-sunken:#20232D;
-    --surface-raised:#242834;
+    --paper:#171614;
+    --surface:#201F1C;
+    --surface-sunken:#272521;
+    --surface-raised:#2C2A26;
 
-    --border:#2B2F3B;
-    --border-strong:#3A3F4E;
+    --border:#35332E;
+    --border-strong:#6E6A63;
 
-    --accent:#34B393;
-    --accent-ink:#0B140F;
-    --accent-soft:rgba(52,179,147,.16);
+    --logo:url('../img/logo-dark.png');
 
-    --danger:#E07575;
-    --danger-soft:rgba(224,117,117,.14);
-    --warn:#E0A94E;
-    --warn-soft:rgba(224,169,78,.14);
-    --ok:#5FBF85;
-    --ok-soft:rgba(95,191,133,.14);
+    --accent:#A990DF;
+    --accent-ink:#16131D;
+    --accent-soft:rgba(169,144,223,.15);
 
-    --tag-teal:#34B393;   --tag-teal-soft:rgba(52,179,147,.14);
-    --tag-gold:#E0A94E;   --tag-gold-soft:rgba(224,169,78,.14);
-    --tag-plum:#C99BDE;   --tag-plum-soft:rgba(201,155,222,.14);
-    --tag-slate:#7FA8D9;  --tag-slate-soft:rgba(127,168,217,.14);
-    --tag-rose:#E08099;   --tag-rose-soft:rgba(224,128,153,.14);
-    --tag-moss:#8FC46A;   --tag-moss-soft:rgba(143,196,106,.14);
+    --danger:#E08C85;
+    --danger-soft:rgba(224,140,133,.14);
+    --warn:#DDB569;
+    --warn-soft:rgba(221,181,105,.14);
+    --ok:#7FC79B;
+    --ok-soft:rgba(127,199,155,.14);
 
-    --pri-urgent:#E07575;
-    --pri-high:#E98A4A;
-    --pri-normal:#6D7385;
-    --pri-low:#4A4F5E;
+    --tag-teal:#71BFA0;   --tag-teal-soft:rgba(113,191,160,.14);
+    --tag-gold:#DDB569;   --tag-gold-soft:rgba(221,181,105,.14);
+    --tag-plum:#C6A3DA;   --tag-plum-soft:rgba(198,163,218,.14);
+    --tag-slate:#93ADCB;  --tag-slate-soft:rgba(147,173,203,.14);
+    --tag-rose:#DE91A5;   --tag-rose-soft:rgba(222,145,165,.14);
+    --tag-moss:#A3C77F;   --tag-moss-soft:rgba(163,199,127,.14);
 
-    --shadow-lift:0 8px 28px -8px rgba(0,0,0,.55);
-    --shadow-pop:0 14px 36px -10px rgba(0,0,0,.62);
+    --pri-urgent:#E08C85;
+    --pri-high:#E0A167;
+    --pri-normal:#918B81;
+    --pri-low:#5E594F;
+
+    --shadow-sm:0 1px 2px rgba(0,0,0,.30);
+    --shadow-lift:0 1px 2px rgba(0,0,0,.30), 0 8px 22px -8px rgba(0,0,0,.50);
+    --shadow-pop:0 2px 6px rgba(0,0,0,.34), 0 20px 48px -14px rgba(0,0,0,.60);
 
     color-scheme:dark;
   }
 }
 
-/* 深色：使用者明確選擇（權重高於系統偏好） */
 :root[data-theme="dark"]{
-  --ink:#E7E9EE;
-  --ink-soft:#A7ACBC;
-  --ink-faint:#6D7385;
+  --ink:#EBE8E2;
+  --ink-soft:#ADA79D;
+  --ink-faint:#918B81;
 
-  --paper:#13151C;
-  --surface:#1B1E27;
-  --surface-sunken:#20232D;
-  --surface-raised:#242834;
+  --paper:#171614;
+  --surface:#201F1C;
+  --surface-sunken:#272521;
+  --surface-raised:#2C2A26;
 
-  --border:#2B2F3B;
-  --border-strong:#3A3F4E;
+  --border:#35332E;
+  --border-strong:#6E6A63;
 
-  --accent:#34B393;
-  --accent-ink:#0B140F;
-  --accent-soft:rgba(52,179,147,.16);
+  --logo:url('../img/logo-dark.png');
 
-  --danger:#E07575;
-  --danger-soft:rgba(224,117,117,.14);
-  --warn:#E0A94E;
-  --warn-soft:rgba(224,169,78,.14);
-  --ok:#5FBF85;
-  --ok-soft:rgba(95,191,133,.14);
+  --accent:#A990DF;
+  --accent-ink:#16131D;
+  --accent-soft:rgba(169,144,223,.15);
 
-  --tag-teal:#34B393;   --tag-teal-soft:rgba(52,179,147,.14);
-  --tag-gold:#E0A94E;   --tag-gold-soft:rgba(224,169,78,.14);
-  --tag-plum:#C99BDE;   --tag-plum-soft:rgba(201,155,222,.14);
-  --tag-slate:#7FA8D9;  --tag-slate-soft:rgba(127,168,217,.14);
-  --tag-rose:#E08099;   --tag-rose-soft:rgba(224,128,153,.14);
-  --tag-moss:#8FC46A;   --tag-moss-soft:rgba(143,196,106,.14);
+  --danger:#E08C85;
+  --danger-soft:rgba(224,140,133,.14);
+  --warn:#DDB569;
+  --warn-soft:rgba(221,181,105,.14);
+  --ok:#7FC79B;
+  --ok-soft:rgba(127,199,155,.14);
 
-  --pri-urgent:#E07575;
-  --pri-high:#E98A4A;
-  --pri-normal:#6D7385;
-  --pri-low:#4A4F5E;
+  --tag-teal:#71BFA0;   --tag-teal-soft:rgba(113,191,160,.14);
+  --tag-gold:#DDB569;   --tag-gold-soft:rgba(221,181,105,.14);
+  --tag-plum:#C6A3DA;   --tag-plum-soft:rgba(198,163,218,.14);
+  --tag-slate:#93ADCB;  --tag-slate-soft:rgba(147,173,203,.14);
+  --tag-rose:#DE91A5;   --tag-rose-soft:rgba(222,145,165,.14);
+  --tag-moss:#A3C77F;   --tag-moss-soft:rgba(163,199,127,.14);
 
-  --shadow-lift:0 8px 28px -8px rgba(0,0,0,.55);
-  --shadow-pop:0 14px 36px -10px rgba(0,0,0,.62);
+  --pri-urgent:#E08C85;
+  --pri-high:#E0A167;
+  --pri-normal:#918B81;
+  --pri-low:#5E594F;
+
+  --shadow-sm:0 1px 2px rgba(0,0,0,.30);
+  --shadow-lift:0 1px 2px rgba(0,0,0,.30), 0 8px 22px -8px rgba(0,0,0,.50);
+  --shadow-pop:0 2px 6px rgba(0,0,0,.34), 0 20px 48px -14px rgba(0,0,0,.60);
 
   color-scheme:dark;
 }
@@ -164,19 +185,29 @@ body{
   color:var(--ink);
   font-family:var(--font-sans);
   font-size:14px;
+  line-height:1.6;
+  letter-spacing:.002em;
   -webkit-font-smoothing:antialiased;
 }
 
-h1,h2,h3{margin:0; text-wrap:balance;}
+h1,h2,h3{margin:0; text-wrap:balance; letter-spacing:-.01em;}
 
 button{font-family:inherit; cursor:pointer;}
 input,select,textarea{font-family:inherit;}
 img{max-width:100%;}
 
+/* 圖示：一律繼承文字顏色，不必為每個位置各寫一次 fill */
+.ico{
+  width:1em; height:1em; flex:0 0 auto;
+  display:inline-block; vertical-align:-.14em;
+  stroke:currentColor; fill:none;
+  stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round;
+}
+
 [hidden]{display:none !important;}
 .hidden{display:none !important;}
 
-:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:3px;}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:var(--r-sm);}
 
 /* 只給螢幕閱讀器 */
 .sr-only{
@@ -191,3 +222,6 @@ img{max-width:100%;}
     transition-duration:.001ms !important;
   }
 }
+
+/* 點狀圖示（⋯ 選單、拖曳把手）的圓點要填滿才看得見 */
+.ico-dots circle{fill:currentColor; stroke:none;}

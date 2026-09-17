@@ -311,7 +311,7 @@
       row.appendChild(opts);
     }
 
-    var rm = util.el('button', 'remove', '×');
+    var rm = util.iconEl('button', 'remove', 'close', '移除');
     rm.title = '刪除欄位';
     rm.setAttribute('aria-label', '刪除欄位 ' + field.label);
     rm.addEventListener('click', function () {

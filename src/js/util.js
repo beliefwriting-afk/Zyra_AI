@@ -25,6 +25,18 @@
   };
 
   /** 建立元素的簡易輔助 */
+  /**
+   * 建一個帶圖示的元素。util.el 只接受純文字，塞不了 SVG，
+   * 而圖示按鈕在介面上到處都是，不該每個模組各寫一份。
+   */
+  util.iconEl = function (tag, className, iconName, label, text) {
+    var el = document.createElement(tag);
+    if (className) el.className = className;
+    el.innerHTML = Z.icon(iconName) + (text ? '<span>' + util.escapeHtml(text) + '</span>' : '');
+    if (label) { el.setAttribute('aria-label', label); el.title = label; }
+    return el;
+  };
+
   util.el = function (tag, className, text) {
     var n = document.createElement(tag);
     if (className) n.className = className;

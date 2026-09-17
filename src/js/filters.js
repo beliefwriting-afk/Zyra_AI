@@ -195,7 +195,7 @@
     activeChips().forEach(function (c) {
       var chip = util.el('span', 'filter-chip');
       chip.appendChild(util.el('span', 'txt', c.text));
-      var x = util.el('button', '', '×');
+      var x = util.iconEl('button', '', 'close', '移除');
       x.setAttribute('aria-label', '移除篩選：' + c.text);
       x.addEventListener('click', function () { c.clear(); apply(); });
       chip.appendChild(x);

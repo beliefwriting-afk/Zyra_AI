@@ -444,7 +444,7 @@
     });
     row.appendChild(text);
 
-    var rm = util.el('button', 'ck-remove', '×');
+    var rm = util.iconEl('button', 'ck-remove', 'close', '移除');
     rm.title = '刪除子任務';
     rm.setAttribute('aria-label', '刪除子任務：' + item.text);
     rm.addEventListener('click', function () {
@@ -492,7 +492,7 @@
     chip.style.color = tok.fg;
     chip.setAttribute('aria-expanded', String(isOpen));
     chip.title = tpl ? ('範本：' + tpl.name + '，點一下展開內容') : '此標籤的範本已被刪除';
-    chip.appendChild(util.el('span', 'caret', '▸'));
+    chip.appendChild(util.iconEl('span', 'caret', 'chevronRight'));
     chip.appendChild(util.el('span', 'txt', M.labelPrimaryText(dept, lab)));
     chip.addEventListener('click', function () {
       if (openLabels[lab.id]) delete openLabels[lab.id];
@@ -501,7 +501,7 @@
     });
     head.appendChild(chip);
 
-    var x = util.el('button', 'kebab-btn', '×');
+    var x = util.iconEl('button', 'kebab-btn', 'close', '移除');
     x.title = '從這張卡片移除標籤';
     x.setAttribute('aria-label', '移除標籤：' + M.labelPrimaryText(dept, lab));
     x.addEventListener('click', function () {

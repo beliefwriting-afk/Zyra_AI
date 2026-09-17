@@ -93,7 +93,7 @@
     nd.boards.forEach(function (bd) {
       var chip = util.el('span', 'chip-editable');
       chip.appendChild(util.el('span', '', bd.name));
-      var rm = util.el('button', '', '×');
+      var rm = util.iconEl('button', '', 'close', '移除');
       rm.setAttribute('aria-label', '移除看板 ' + bd.name);
       rm.addEventListener('click', function () {
         nd.boards = nd.boards.filter(function (x) { return x.id !== bd.id; });
@@ -154,7 +154,7 @@
     nb.columns.forEach(function (col) {
       var chip = util.el('span', 'chip-editable');
       chip.appendChild(util.el('span', '', col.name));
-      var rm = util.el('button', '', '×');
+      var rm = util.iconEl('button', '', 'close', '移除');
       rm.setAttribute('aria-label', '移除欄位 ' + col.name);
       rm.addEventListener('click', function () {
         nb.columns = nb.columns.filter(function (c) { return c.id !== col.id; });
@@ -235,7 +235,7 @@
       });
       chip.appendChild(nameInput);
 
-      var rm = util.el('button', '', '×');
+      var rm = util.iconEl('button', '', 'close', '移除');
       rm.setAttribute('aria-label', '刪除欄位 ' + col.name);
       if (isLast) {
         rm.title = '看板至少需保留一個欄位';

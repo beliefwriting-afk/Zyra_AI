@@ -7,7 +7,9 @@
 <meta name="description" content="Zyra — 部門、看板、卡片與結構化標籤的專案管理工具">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="src/img/favicon-32.png">
+<link rel="apple-touch-icon" href="src/img/apple-touch-icon.png">
 <link rel="stylesheet" href="src/css/tokens.css">
 <link rel="stylesheet" href="src/css/layout.css">
 <link rel="stylesheet" href="src/css/components.css">
@@ -18,12 +20,11 @@
 
   <!-- ================= 側邊欄 ================= -->
   <aside class="sidebar" id="sidebar" aria-label="部門與看板導覽">
-    <button class="collapse-btn-collapsed" id="btnExpandSidebar" title="展開側邊欄" aria-label="展開側邊欄">»</button>
+    <button class="collapse-btn-collapsed" id="btnExpandSidebar" title="展開側邊欄" aria-label="展開側邊欄" data-icon="chevronRight"></button>
 
     <div class="brand-row">
-      <!-- 產品 icon 日後放這裡：<span class="brand-mark"><svg …/></span> -->
-      <span class="brand-wordmark">Zyra</span>
-      <button class="collapse-btn" id="btnCollapseSidebar" title="收合側邊欄" aria-label="收合側邊欄">«</button>
+      <span class="brand-logo" role="img" aria-label="Zyra"></span>
+      <button class="collapse-btn" id="btnCollapseSidebar" title="收合側邊欄" aria-label="收合側邊欄" data-icon="chevronLeft"></button>
     </div>
 
     <div class="company-row">
@@ -36,15 +37,15 @@
     <div class="account-row">
       <button class="avatar-chip" id="accountAvatar" title="帳號" aria-label="帳號選單">使</button>
       <span class="account-name full-only" id="accountName"></span>
-      <button class="icon-btn full-only" id="btnShortcuts" title="鍵盤快捷鍵" aria-label="鍵盤快捷鍵">⌨</button>
-      <button class="icon-btn" id="btnSettings" title="設定" aria-label="開啟設定">⚙</button>
+      <button class="icon-btn full-only" id="btnShortcuts" title="鍵盤快捷鍵" aria-label="鍵盤快捷鍵" data-icon="keyboard"></button>
+      <button class="icon-btn" id="btnSettings" title="設定" aria-label="開啟設定" data-icon="settings"></button>
     </div>
   </aside>
 
   <!-- ================= 主區 ================= -->
   <main class="main">
     <header class="topbar">
-      <button class="btn-nav" id="btnNav" aria-label="開啟導覽選單">☰</button>
+      <button class="btn-nav" id="btnNav" aria-label="開啟導覽選單" data-icon="menu"></button>
       <div class="breadcrumb">
         <span class="dept-tag" id="bcDept"></span>
         <span class="sep" id="bcSep">›</span>
@@ -52,21 +53,21 @@
       </div>
       <div class="topbar-actions" id="topbarActions">
         <button class="sync-pill hidden" id="syncPill" aria-live="polite"></button>
-        <button class="pill-btn" id="btnGlobalSearch" title="全域搜尋（Ctrl / ⌘ + K）" aria-label="全域搜尋">⌕<span class="label">搜尋</span></button>
-        <button class="pill-btn" id="btnColumns" aria-label="看板欄位">≡<span class="label">欄位</span></button>
-        <button class="pill-btn" id="btnLibrary" aria-label="範本與標籤庫">🏷<span class="label">標籤庫</span></button>
-        <button class="btn-primary" id="btnNewCard">＋ 新增卡片</button>
+        <button class="pill-btn" id="btnGlobalSearch" title="全域搜尋（Ctrl / ⌘ + K）" aria-label="全域搜尋" data-icon="search"><span class="label">搜尋</span></button>
+        <button class="pill-btn" id="btnColumns" aria-label="看板欄位" data-icon="columns"><span class="label">欄位</span></button>
+        <button class="pill-btn" id="btnLibrary" aria-label="範本與標籤庫" data-icon="tag"><span class="label">標籤庫</span></button>
+        <button class="btn-primary" id="btnNewCard" data-icon="plus"><span class="label">新增卡片</span></button>
       </div>
     </header>
 
     <div class="filterbar" id="filterbar" role="search" aria-label="卡片篩選">
       <div class="filter-search">
-        <span class="icon" aria-hidden="true">⌕</span>
+        <span class="icon" data-icon="search"></span>
         <input type="text" id="filterSearch" placeholder="在這個看板搜尋（按 /）" aria-label="在目前看板搜尋卡片">
-        <button class="clear hidden" id="filterSearchClear" aria-label="清除搜尋文字">×</button>
+        <button class="clear hidden" id="filterSearchClear" aria-label="清除搜尋文字" data-icon="close"></button>
       </div>
       <span id="filterChips" style="display:contents;"></span>
-      <button class="filter-add" id="filterAdd">＋ 篩選</button>
+      <button class="filter-add" id="filterAdd" data-icon="plus">篩選</button>
       <button class="pill-btn hidden" id="filterReset">清除全部</button>
       <span class="filter-summary" id="filterSummary" aria-live="polite"></span>
     </div>
@@ -81,7 +82,7 @@
 -->
 <div class="login-screen" id="loginScreen" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
   <div class="login-card">
-    <div class="login-wordmark" id="loginTitle">Zyra</div>
+    <div class="login-logo" id="loginTitle" role="img" aria-label="Zyra"></div>
     <p class="login-sub">請以獲授權的 Google 帳號登入。</p>
     <div class="login-btn-slot" id="googleBtn"></div>
     <div class="login-error hidden" id="loginError" role="alert"></div>
@@ -91,7 +92,7 @@
 <!-- ================= 啟動失敗 ================= -->
 <div class="login-screen" id="bootError" role="alert">
   <div class="login-card">
-    <div class="login-wordmark">Zyra</div>
+    <div class="login-logo" role="img" aria-label="Zyra"></div>
     <p class="login-sub">無法載入資料。伺服器可能暫時無法連線。</p>
     <div class="login-error" id="bootErrorDetail" style="font-family:var(--font-mono); font-size:11.5px;"></div>
     <button class="btn-primary" style="margin-top:16px;" onclick="location.reload()">重新載入</button>
@@ -105,7 +106,7 @@
      跟系統其他元件的層次一致。
 -->
 <button class="ai-fab hidden" id="btnAI" title="AI 助理" aria-label="開啟 AI 助理">
-  <span class="ai-fab-icon" aria-hidden="true">✦</span>
+  <span class="ai-fab-icon" data-icon="sparkle"></span>
 </button>
 
 <!-- 螢幕閱讀器即時播報 -->
@@ -123,13 +124,13 @@
 
   <div class="drawer-section-title">
     <span>範本</span>
-    <button class="add-row-btn" id="btnAddTemplate">＋ 新增範本</button>
+    <button class="add-row-btn" data-icon="plus" id="btnAddTemplate">新增範本</button>
   </div>
   <div id="templateList"></div>
 
   <div class="drawer-section-title">
     <span>標籤庫</span>
-    <button class="add-row-btn" id="btnToggleLabelCreate">＋ 建立標籤</button>
+    <button class="add-row-btn" data-icon="plus" id="btnToggleLabelCreate">建立標籤</button>
   </div>
   <div id="labelList"></div>
   <div class="label-create-box hidden" id="labelCreateBox"></div>
@@ -225,8 +226,8 @@
 <div class="modal card-detail" id="modalCardDetail" role="dialog" aria-modal="true" aria-labelledby="cdTitle" aria-hidden="true">
   <div class="cd-head">
     <div class="cd-path" id="cdPath"></div>
-    <button class="kebab-btn" id="cdMenu" title="卡片選項" aria-label="卡片選項">⋯</button>
-    <button class="icon-btn" id="cdClose" title="關閉" aria-label="關閉卡片">×</button>
+    <button class="kebab-btn" id="cdMenu" title="卡片選項" aria-label="卡片選項" data-icon="more"></button>
+    <button class="icon-btn" id="cdClose" title="關閉" aria-label="關閉卡片" data-icon="close"></button>
   </div>
 
   <h2 class="cd-title" id="cdTitle" tabindex="0" role="button" title="點一下可編輯標題"></h2>
@@ -242,7 +243,7 @@
     <div class="cd-section-head">
       <h3>檢查清單</h3>
       <span class="cd-count" id="cdCkMeta"></span>
-      <button class="add-row-btn" id="cdAddCheckItem">＋ 新增子任務</button>
+      <button class="add-row-btn" data-icon="plus" id="cdAddCheckItem">新增子任務</button>
     </div>
     <div id="cdChecklist"></div>
   </section>
@@ -250,7 +251,7 @@
   <section class="cd-section">
     <div class="cd-section-head">
       <h3>標籤</h3>
-      <button class="add-row-btn" id="cdAddLabel">＋ 加標籤</button>
+      <button class="add-row-btn" data-icon="plus" id="cdAddLabel">加標籤</button>
     </div>
     <div id="cdLabels"></div>
   </section>
@@ -267,7 +268,7 @@
   <h2 id="pickerTitle">選擇或建立標籤</h2>
   <div class="modal-sub">標籤是「範本 ＋ 填好的值」，建立一次就能重複套用在多張卡片上。</div>
   <div id="pickerExistingList"></div>
-  <button class="add-row-btn" id="btnRevealCreateLabel">＋ 建立新標籤</button>
+  <button class="add-row-btn" data-icon="plus" id="btnRevealCreateLabel">建立新標籤</button>
   <div class="label-create-box hidden" id="pickerCreateBox"></div>
   <div class="modal-actions">
     <button class="btn-secondary" id="pickerDone">完成</button>
@@ -285,7 +286,7 @@
   </div>
   <div class="drawer-section-title"><span>欄位</span></div>
   <div id="tmFields"></div>
-  <button class="add-row-btn" id="tmAddField">＋ 新增欄位</button>
+  <button class="add-row-btn" data-icon="plus" id="tmAddField">新增欄位</button>
   <div class="settings-hint" id="tmUsage" style="margin-top:12px;"></div>
   <div class="modal-actions" style="justify-content:space-between;">
     <button class="btn-danger-text" id="tmDelete">刪除範本</button>
@@ -314,7 +315,7 @@
 <div class="modal wide" id="modalSearch" role="dialog" aria-modal="true" aria-labelledby="searchTitle" aria-hidden="true">
   <h2 id="searchTitle" class="sr-only">全域搜尋</h2>
   <div class="search-input-wrap">
-    <span class="icon" aria-hidden="true">⌕</span>
+    <span class="icon" data-icon="search"></span>
     <input type="text" id="searchInput" placeholder="搜尋所有部門的卡片…" data-autofocus aria-label="全域搜尋卡片">
   </div>
   <div class="settings-hint" id="searchStatus" aria-live="polite"></div>
@@ -456,7 +457,7 @@
   <div class="ai-head">
     <h2 id="aiTitle">AI 助理</h2>
     <button class="pill-btn" id="aiReset" title="清空對話重新開始">新對話</button>
-    <button class="icon-btn" id="aiClose" title="關閉" aria-label="關閉助理">×</button>
+    <button class="icon-btn" id="aiClose" title="關閉" aria-label="關閉助理" data-icon="close"></button>
   </div>
 
   <div class="ai-log" id="aiLog" role="log" aria-live="polite"></div>
@@ -520,6 +521,7 @@
 <script src="src/js/config.js"></script>
 <script src="src/js/constants.js"></script>
 <script src="src/js/util.js"></script>
+<script src="src/js/icons.js"></script>
 <script src="src/js/store.js"></script>
 <script src="src/js/model.js"></script>
 <script src="src/js/actions.js"></script>

@@ -323,7 +323,7 @@
       act.addEventListener('click', function () { dismiss(); opts.onAction(); });
       box.appendChild(act);
     }
-    var close = util.el('button', 'toast-close', '×');
+    var close = util.iconEl('button', 'toast-close', 'close', '移除');
     close.setAttribute('aria-label', '關閉提示');
     close.addEventListener('click', dismiss);
     box.appendChild(close);

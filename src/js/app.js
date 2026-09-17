@@ -123,6 +123,10 @@
     Z.theme.apply();
     Z.theme.watchSystem();
 
+    // 靜態標記裡的 data-icon 要在任何畫面出現之前就換成 SVG，
+    // 否則登入畫面會先閃一下空白的按鈕。
+    if (Z.icon && Z.icon.hydrate) Z.icon.hydrate();
+
     ui.init();
     if (Z.auth) Z.auth.init();
 

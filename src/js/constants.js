@@ -77,16 +77,16 @@
 
     /** 主色方案 */
     ACCENT_THEMES: {
-      green:  { light: { accent: '#0C6E58', ink: '#FFFFFF', soft: '#E1F0EA' }, dark: { accent: '#34B393', ink: '#0B140F', soft: 'rgba(52,179,147,.16)' } },
-      teal:   { light: { accent: '#0E7480', ink: '#FFFFFF', soft: '#DCEEF0' }, dark: { accent: '#3FC1CF', ink: '#071A1C', soft: 'rgba(63,193,207,.16)' } },
-      blue:   { light: { accent: '#2A5C99', ink: '#FFFFFF', soft: '#DEE9F5' }, dark: { accent: '#6FA8DC', ink: '#0B1520', soft: 'rgba(111,168,220,.16)' } },
-      indigo: { light: { accent: '#4C51BF', ink: '#FFFFFF', soft: '#E6E7FA' }, dark: { accent: '#8B90E8', ink: '#12132B', soft: 'rgba(139,144,232,.16)' } },
-      purple: { light: { accent: '#6B3FA0', ink: '#FFFFFF', soft: '#EFE3F5' }, dark: { accent: '#B98CE0', ink: '#180B22', soft: 'rgba(185,140,224,.16)' } },
-      pink:   { light: { accent: '#B23368', ink: '#FFFFFF', soft: '#F8E1EA' }, dark: { accent: '#E8749E', ink: '#260A15', soft: 'rgba(232,116,158,.16)' } },
-      red:    { light: { accent: '#B03A2E', ink: '#FFFFFF', soft: '#F6E1DE' }, dark: { accent: '#E2695A', ink: '#1C0C0A', soft: 'rgba(226,105,90,.16)' } },
-      orange: { light: { accent: '#C2600C', ink: '#FFFFFF', soft: '#F8E4D2' }, dark: { accent: '#E98A4A', ink: '#1A0F08', soft: 'rgba(233,138,74,.16)' } },
-      amber:  { light: { accent: '#8A6D0A', ink: '#FFFFFF', soft: '#F3E9C9' }, dark: { accent: '#E3C24C', ink: '#241C05', soft: 'rgba(227,194,76,.16)' } },
-      slate:  { light: { accent: '#3F4B5C', ink: '#FFFFFF', soft: '#E5E8EC' }, dark: { accent: '#9FB0C4', ink: '#0E1218', soft: 'rgba(159,176,196,.16)' } }
+      green:  { light: { accent: '#247765', ink: '#FFFFFF', soft: '#E5EFED' }, dark: { accent: '#71BFA0', ink: '#0F1915', soft: 'rgba(113,191,160,.15)' } },
+      teal:   { light: { accent: '#27747C', ink: '#FFFFFF', soft: '#E5EFF0' }, dark: { accent: '#5FC3CE', ink: '#0C191B', soft: 'rgba(95,195,206,.15)' } },
+      blue:   { light: { accent: '#466C9B', ink: '#FFFFFF', soft: '#E9EEF4' }, dark: { accent: '#8FB6DE', ink: '#13181D', soft: 'rgba(143,182,222,.15)' } },
+      indigo: { light: { accent: '#6265A6', ink: '#FFFFFF', soft: '#EDEDF5' }, dark: { accent: '#9DA1E8', ink: '#14151E', soft: 'rgba(157,161,232,.15)' } },
+      purple: { light: { accent: '#7955C5', ink: '#FFFFFF', soft: '#F0EBF9' }, dark: { accent: '#A990DF', ink: '#16131D', soft: 'rgba(169,144,223,.15)' } },
+      pink:   { light: { accent: '#A44C71', ink: '#FFFFFF', soft: '#F5EAEF' }, dark: { accent: '#E594AF', ink: '#1E1317', soft: 'rgba(229,148,175,.15)' } },
+      red:    { light: { accent: '#A45148', ink: '#FFFFFF', soft: '#F5EBEA' }, dark: { accent: '#E09289', ink: '#1D1312', soft: 'rgba(224,146,137,.15)' } },
+      orange: { light: { accent: '#975B27', ink: '#FFFFFF', soft: '#F4ECE5' }, dark: { accent: '#E0A167', ink: '#1D150D', soft: 'rgba(224,161,103,.15)' } },
+      amber:  { light: { accent: '#7D6822', ink: '#FFFFFF', soft: '#F0EEE5' }, dark: { accent: '#DDC177', ink: '#1D190F', soft: 'rgba(221,193,119,.15)' } },
+      slate:  { light: { accent: '#606B7C', ink: '#FFFFFF', soft: '#EDEEF0' }, dark: { accent: '#AFBCCB', ink: '#17181A', soft: 'rgba(175,188,203,.15)' } }
     },
     ACCENT_LABELS: {
       green: '綠', teal: '青', blue: '藍', indigo: '靛', purple: '紫',
